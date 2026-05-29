@@ -14,6 +14,7 @@ A collection of self-contained, 60 FPS WebAssembly games built with Rust and Mac
 | **Lumines** | Lumines-style puzzle game | [Play](https://ollisulopuisto.github.io/games/lumines/) |
 | **VoxelDash** | 2.5D procedural voxel platformer | [Play](https://ollisulopuisto.github.io/games/voxeldash/) |
 | **Zookeeper** | Zookeeper clone (match-3) | [Play](https://ollisulopuisto.github.io/games/zookeeper/) |
+| **Kissagotchi** | Cat Tamagotchi (Vanilla JS) | [Play](https://ollisulopuisto.github.io/games/kissagotchi/) |
 
 ## 🛠 Tech Stack
 
@@ -40,6 +41,7 @@ A collection of self-contained, 60 FPS WebAssembly games built with Rust and Mac
 │       ├── gravitris/
 │       ├── jetpac/
 │       ├── lumines/
+│       ├── kissagotchi/
 │       ├── voxeldash/
 │       └── zookeeper/
 └── scripts/            # Project-wide utility scripts

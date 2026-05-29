@@ -12,6 +12,7 @@ Available Games:
 - **[Zookeeper Clone](https://ollisulopuisto.github.io/games/zookeeper/)**
 - **[Jetpac Clone](https://ollisulopuisto.github.io/games/jetpac/)**
 - **[Bubbles](https://ollisulopuisto.github.io/games/bubbles/)**
+- **[Kissagotchi](https://ollisulopuisto.github.io/games/kissagotchi/)** - Cat Tamagotchi game.
 
 ## 🚀 Features
 - **Monorepo Architecture:** Powered by Cargo Workspaces.
