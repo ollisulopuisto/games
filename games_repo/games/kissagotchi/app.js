@@ -1,3 +1,5 @@
+/* global anime */
+
 class Kissagotchi {
     constructor() {
         this.MAX_STAT = 100;
@@ -174,7 +176,7 @@ class Kissagotchi {
         this.updateBars();
         this.updateFace();
         
-        this.triggerAnimation('anim-eat');
+        this.triggerAnimation('eat');
         this.showMessage("Nam nam! 🐟");
         this.saveState();
     }
@@ -191,7 +193,7 @@ class Kissagotchi {
         this.updateBars();
         this.updateFace();
 
-        this.triggerAnimation('anim-play');
+        this.triggerAnimation('play');
         this.showMessage("Purrrr! 🧶");
         this.saveState();
     }
@@ -202,28 +204,127 @@ class Kissagotchi {
         
         if (this.state.isSleeping) {
             this.showMessage("Hyvää yötä! 💤");
+            this.triggerAnimation('sleep');
         } else {
             this.showMessage("Huomenta! ☀️");
+            if (typeof anime !== 'undefined') {
+                anime({ targets: this.catContainer, scale: [0.9, 1], duration: 800, easing: 'easeOutElastic(1, .5)' });
+            }
         }
         this.saveState();
     }
 
-    triggerAnimation(className) {
+    createParticles(type) {
+        if (typeof anime === 'undefined') return;
+        const container = document.querySelector('.pet-display');
+        if (!container) return;
+
+        let emojis = [];
+        let count = 10;
+        let scaleRange = [0.5, 1.5];
+        
+        if (type === 'eat') {
+            emojis = ['🐟', '💖', '✨'];
+        } else if (type === 'play') {
+            emojis = ['🧶', '⭐', '🎵'];
+        } else if (type === 'sleep') {
+            emojis = ['Z', 'z', '💤'];
+            count = 5;
+            scaleRange = [0.8, 1.5];
+        } else if (type === 'sad') {
+            emojis = ['💧', '😢', '💔'];
+            count = 6;
+        }
+
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            p.style.position = 'absolute';
+            p.style.fontSize = type === 'sleep' ? '30px' : '24px';
+            p.style.pointerEvents = 'none';
+            p.style.zIndex = '100';
+            p.style.left = '50%';
+            p.style.top = '50%';
+            p.style.transform = 'translate(-50%, -50%)';
+            p.style.color = type === 'sleep' ? '#A29BFE' : '#FFF';
+            p.style.textShadow = '0 2px 8px rgba(0,0,0,0.4)';
+            container.appendChild(p);
+
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 80 + Math.random() * 100;
+
+            if (type === 'sleep') {
+                anime({
+                    targets: p,
+                    translateX: [-20 + Math.random()*40, -40 + Math.random()*80],
+                    translateY: [0, -100 - Math.random()*60],
+                    opacity: [0, 1, 0],
+                    scale: scaleRange,
+                    duration: 3000 + Math.random() * 2000,
+                    easing: 'easeOutSine',
+                    complete: () => p.remove()
+                });
+            } else {
+                anime({
+                    targets: p,
+                    translateX: Math.cos(angle) * distance,
+                    translateY: Math.sin(angle) * distance - 20,
+                    opacity: [1, 0],
+                    scale: scaleRange,
+                    rotate: Math.random() * 360 - 180,
+                    duration: 1000 + Math.random() * 1000,
+                    easing: 'easeOutExpo',
+                    complete: () => p.remove()
+                });
+            }
+        }
+    }
+
+    triggerAnimation(type) {
         if (!this.catContainer) return;
         
         if (this.animTimeout) {
             clearTimeout(this.animTimeout);
         }
 
-        this.catContainer.classList.remove('anim-eat', 'anim-play', 'anim-sad');
-        // Force reflow
-        void this.catContainer.offsetWidth;
-        this.catContainer.classList.add(className);
+        this.catContainer.classList.remove('anim-sleep', 'anim-sad', 'anim-eat', 'anim-play');
+        
+        if (typeof anime !== 'undefined') {
+            anime.remove(this.catContainer);
+            this.createParticles(type);
+            
+            if (type === 'eat') {
+                anime({
+                    targets: this.catContainer,
+                    scale: [1, 1.1, 1],
+                    translateY: [0, 5, 0],
+                    duration: 400,
+                    easing: 'easeInOutQuad',
+                    direction: 'alternate',
+                    loop: 2
+                });
+            } else if (type === 'play') {
+                anime({
+                    targets: this.catContainer,
+                    rotate: [0, -15, 15, -15, 0],
+                    translateY: [0, -25, -25, -25, 0],
+                    duration: 800,
+                    easing: 'easeOutElastic(1, .5)'
+                });
+            }
+        } else {
+            // Fallback
+            this.catContainer.classList.add(`anim-${type}`);
+        }
         
         this.animTimeout = setTimeout(() => {
             if (!this.state.isSleeping) {
-                this.catContainer.classList.remove(className);
-                this.updateFace(); // restores default idle class
+                if (typeof anime !== 'undefined') {
+                    anime({ targets: this.catContainer, rotate: 0, translateY: 0, scale: 1, duration: 400 });
+                } else {
+                    this.catContainer.classList.remove(`anim-${type}`);
+                }
+                this.updateFace(); 
             }
         }, 1500);
     }
