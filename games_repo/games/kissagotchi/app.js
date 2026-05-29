@@ -42,13 +42,19 @@ class Kissagotchi {
         document.getElementById('btn-sleep')?.addEventListener('click', () => this.toggleSleep());
 
         // Game loop (updates every 5 seconds)
-        setInterval(() => this.gameLoop(), 5000);
+        this.gameInterval = setInterval(() => this.gameLoop(), 5000);
         
         // Save state before closing
         window.addEventListener('beforeunload', () => this.saveState());
         
         // Initial greeting
         this.showMessage("Miau!");
+    }
+
+    destroy() {
+        if (this.gameInterval) {
+            clearInterval(this.gameInterval);
+        }
     }
 
     loadState() {
@@ -84,15 +90,30 @@ class Kissagotchi {
         
         // Prevent exploit if time goes backwards or is too far in future (e.g. > 1 week)
         if (diffMs > 0 && diffMs < 7 * 24 * 60 * 60 * 1000) {
-            const diffMinutes = Math.floor(diffMs / 60000);
+            let diffMinutes = Math.floor(diffMs / 60000);
             
             if (diffMinutes > 0) {
-                const decrease = Math.floor(diffMinutes / 2);
-                
                 if (this.state.isSleeping) {
-                    this.state.energy = Math.min(this.MAX_STAT, this.state.energy + (diffMinutes * 2));
-                    this.state.satiety -= decrease;
-                } else {
+                    const energyNeeded = this.MAX_STAT - this.state.energy;
+                    const minutesToWakeUp = Math.ceil(energyNeeded / 2);
+                    
+                    if (diffMinutes >= minutesToWakeUp) {
+                        // Kissa herää offline-aikana
+                        this.state.energy = this.MAX_STAT;
+                        this.state.satiety -= Math.floor(minutesToWakeUp / 2);
+                        this.state.isSleeping = false;
+                        diffMinutes -= minutesToWakeUp;
+                    } else {
+                        // Kissa ei ehdi herätä
+                        this.state.energy += diffMinutes * 2;
+                        this.state.satiety -= Math.floor(diffMinutes / 2);
+                        diffMinutes = 0;
+                    }
+                }
+                
+                // Jos kissa on hereillä (tai heräsi unesta kesken kaiken)
+                if (diffMinutes > 0 && !this.state.isSleeping) {
+                    const decrease = Math.floor(diffMinutes / 2);
                     this.state.satiety -= decrease;
                     this.state.happiness -= decrease;
                     this.state.energy -= decrease;
