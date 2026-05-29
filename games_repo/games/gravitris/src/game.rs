@@ -6,7 +6,13 @@ pub const ROWS: usize = 20;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum PieceType {
-    I, O, T, S, Z, J, L
+    I,
+    O,
+    T,
+    S,
+    Z,
+    J,
+    L,
 }
 
 impl PieceType {
@@ -35,7 +41,10 @@ impl PieceType {
 
         let mut current_shape = base_shape;
         for _ in 0..(rotation % 4) {
-            current_shape = current_shape.into_iter().map(|(x, y)| (1 - (y - 1), x)).collect();
+            current_shape = current_shape
+                .into_iter()
+                .map(|(x, y)| (1 - (y - 1), x))
+                .collect();
         }
         current_shape
     }
@@ -108,14 +117,21 @@ impl Board {
 
     fn random_piece_type() -> PieceType {
         let piece_types = [
-            PieceType::I, PieceType::O, PieceType::T,
-            PieceType::S, PieceType::Z, PieceType::J, PieceType::L
+            PieceType::I,
+            PieceType::O,
+            PieceType::T,
+            PieceType::S,
+            PieceType::Z,
+            PieceType::J,
+            PieceType::L,
         ];
         piece_types[quad_rand::gen_range(0, piece_types.len())]
     }
 
     pub fn update(&mut self, dt: f32) {
-        if self.impact_timer > 0.0 { self.impact_timer -= dt; }
+        if self.impact_timer > 0.0 {
+            self.impact_timer -= dt;
+        }
         if self.clear_anim_timer > 0.0 {
             self.clear_anim_timer -= dt;
             if self.clear_anim_timer <= 0.0 {
@@ -150,7 +166,7 @@ impl Board {
         for _ in 0..num_wells {
             let wx = quad_rand::gen_range(0, COLS as i32);
             // Wells are placed in the lower half of the board
-            let wy = quad_rand::gen_range(ROWS as i32 / 2, ROWS as i32); 
+            let wy = quad_rand::gen_range(ROWS as i32 / 2, ROWS as i32);
             self.wells.push(GravityWell {
                 x: wx,
                 y: wy,
@@ -161,7 +177,7 @@ impl Board {
 
     pub fn add_lines_cleared(&mut self, lines: u32) {
         self.lines_cleared_total += lines;
-        
+
         // Classic scoring with Tetris multiplier
         let base_points = match lines {
             1 => 100,
@@ -184,7 +200,7 @@ impl Board {
         self.next_piece = Self::random_piece_type();
         let x = COLS as i32 / 2 - 2;
         let y = -1;
-        
+
         if !self.collides(piece_type, x, y, 0) {
             self.active = Some(ActivePiece {
                 piece_type,
@@ -214,11 +230,17 @@ impl Board {
                 }
             }
 
-            let dx = if total_dx > 0.5 { 1 } else if total_dx < -0.5 { -1 } else { 0 };
+            let dx = if total_dx > 0.5 {
+                1
+            } else if total_dx < -0.5 {
+                -1
+            } else {
+                0
+            };
             let dy = if total_dy > 0.5 { 1 } else { 0 };
 
             if dx != 0 || dy != 0 {
-                // Cheat: if we are trying to move sideways but it's blocked, 
+                // Cheat: if we are trying to move sideways but it's blocked,
                 // still allow downward pull if that part is clear.
                 if !self.move_piece(dx, dy) && dy > 0 {
                     return self.move_piece(0, dy);
@@ -231,14 +253,34 @@ impl Board {
 
     pub fn draw(&self, offset_x: f32, offset_y: f32, cell_size: f32) {
         // Draw grid background
-        draw_rectangle(offset_x, offset_y, COLS as f32 * cell_size, ROWS as f32 * cell_size, Color::new(0.1, 0.1, 0.1, 1.0));
-        
+        draw_rectangle(
+            offset_x,
+            offset_y,
+            COLS as f32 * cell_size,
+            ROWS as f32 * cell_size,
+            Color::new(0.1, 0.1, 0.1, 1.0),
+        );
+
         // Draw grid lines
         for x in 0..=COLS {
-            draw_line(offset_x + x as f32 * cell_size, offset_y, offset_x + x as f32 * cell_size, offset_y + ROWS as f32 * cell_size, 1.0, Color::new(0.2, 0.2, 0.2, 1.0));
+            draw_line(
+                offset_x + x as f32 * cell_size,
+                offset_y,
+                offset_x + x as f32 * cell_size,
+                offset_y + ROWS as f32 * cell_size,
+                1.0,
+                Color::new(0.2, 0.2, 0.2, 1.0),
+            );
         }
         for y in 0..=ROWS {
-            draw_line(offset_x, offset_y + y as f32 * cell_size, offset_x + COLS as f32 * cell_size, offset_y + y as f32 * cell_size, 1.0, Color::new(0.2, 0.2, 0.2, 1.0));
+            draw_line(
+                offset_x,
+                offset_y + y as f32 * cell_size,
+                offset_x + COLS as f32 * cell_size,
+                offset_y + y as f32 * cell_size,
+                1.0,
+                Color::new(0.2, 0.2, 0.2, 1.0),
+            );
         }
 
         // Global board squash/stretch from impact
@@ -281,7 +323,14 @@ impl Board {
                     let final_y = by + (draw_cell_size - final_h);
 
                     draw_rectangle(final_x, final_y, final_w, final_h, color);
-                    draw_rectangle_lines(final_x, final_y, final_w, final_h, 2.0, Color::new(0.0, 0.0, 0.0, alpha));
+                    draw_rectangle_lines(
+                        final_x,
+                        final_y,
+                        final_w,
+                        final_h,
+                        2.0,
+                        Color::new(0.0, 0.0, 0.0, alpha),
+                    );
                 }
             }
         }
@@ -313,7 +362,12 @@ impl Board {
             let cx = offset_x + well.x as f32 * cell_size + cell_size * 0.5;
             let cy = offset_y + well.y as f32 * cell_size + cell_size * 0.5;
             let pulse = (get_time() * 5.0).sin() as f32 * 0.2 + 0.8;
-            draw_circle(cx, cy, cell_size * 0.4 * pulse, Color::new(1.0, 0.0, 1.0, 0.5));
+            draw_circle(
+                cx,
+                cy,
+                cell_size * 0.4 * pulse,
+                Color::new(1.0, 0.0, 1.0, 0.5),
+            );
             draw_circle_lines(cx, cy, cell_size * 0.5 * pulse, 2.0, MAGENTA);
         }
     }
@@ -322,10 +376,23 @@ impl Board {
         let label = "NEXT";
         let font_size = cell_size * 0.8;
         draw_text(label, x, y - 5.0, font_size, WHITE);
-        
+
         for (dx, dy) in self.next_piece.shape(0) {
-            draw_rectangle(x + dx as f32 * cell_size, y + dy as f32 * cell_size, cell_size, cell_size, self.next_piece.color());
-            draw_rectangle_lines(x + dx as f32 * cell_size, y + dy as f32 * cell_size, cell_size, cell_size, 2.0, BLACK);
+            draw_rectangle(
+                x + dx as f32 * cell_size,
+                y + dy as f32 * cell_size,
+                cell_size,
+                cell_size,
+                self.next_piece.color(),
+            );
+            draw_rectangle_lines(
+                x + dx as f32 * cell_size,
+                y + dy as f32 * cell_size,
+                cell_size,
+                cell_size,
+                2.0,
+                BLACK,
+            );
         }
     }
 
@@ -420,7 +487,7 @@ mod tests {
             y: 0,
             rotation: 0,
         });
-        
+
         let moved = board.move_piece(1, 0);
         assert!(moved);
         let active = board.active.as_ref().unwrap();
@@ -436,7 +503,7 @@ mod tests {
             y: 5,
             rotation: 0,
         });
-        
+
         let rotated = board.rotate_piece();
         assert!(rotated);
         let active = board.active.as_ref().unwrap();
@@ -449,7 +516,7 @@ mod tests {
         for x in 0..COLS {
             board.grid[ROWS - 1][x] = Some(PieceType::O);
         }
-        
+
         let cleared = board.clear_lines();
         assert_eq!(cleared, 1);
         board.update(0.3); // Advance time to finalize clear
@@ -468,8 +535,12 @@ mod tests {
             y: 5,
             rotation: 0,
         });
-        board.wells.push(GravityWell { x: 9, y: 5, strength: 50.0 });
-        
+        board.wells.push(GravityWell {
+            x: 9,
+            y: 5,
+            strength: 50.0,
+        });
+
         let pulled = board.apply_gravity_wells();
         assert!(pulled);
         let active = board.active.as_ref().unwrap();
@@ -488,8 +559,12 @@ mod tests {
             rotation: 0,
         });
         // Well is ABOVE the piece
-        board.wells.push(GravityWell { x: 5, y: 0, strength: 100.0 });
-        
+        board.wells.push(GravityWell {
+            x: 5,
+            y: 0,
+            strength: 100.0,
+        });
+
         let pulled = board.apply_gravity_wells();
         // Should NOT move up
         assert!(!pulled);

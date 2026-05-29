@@ -87,7 +87,12 @@ where
         Ok(v) => v,
         Err(e) => {
             let json_str = String::from_utf8_lossy(json_slice);
-            macroquad::prelude::error!("Leaderboard parse error: {} | Raw data ({} bytes): {}", e, len, json_str);
+            macroquad::prelude::error!(
+                "Leaderboard parse error: {} | Raw data ({} bytes): {}",
+                e,
+                len,
+                json_str
+            );
             Vec::new()
         }
     }

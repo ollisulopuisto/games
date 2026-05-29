@@ -10,11 +10,26 @@ pub fn load_scores() -> Vec<ScoreEntry> {
     let mut scores: Vec<ScoreEntry> = shared::leaderboard::load_scores();
     if scores.is_empty() {
         scores = vec![
-            ScoreEntry { name: "BAR".to_string(), score: 5000 },
-            ScoreEntry { name: "BUB".to_string(), score: 4000 },
-            ScoreEntry { name: "BOB".to_string(), score: 3000 },
-            ScoreEntry { name: "ZEN".to_string(), score: 2000 },
-            ScoreEntry { name: "DOT".to_string(), score: 1000 },
+            ScoreEntry {
+                name: "BAR".to_string(),
+                score: 5000,
+            },
+            ScoreEntry {
+                name: "BUB".to_string(),
+                score: 4000,
+            },
+            ScoreEntry {
+                name: "BOB".to_string(),
+                score: 3000,
+            },
+            ScoreEntry {
+                name: "ZEN".to_string(),
+                score: 2000,
+            },
+            ScoreEntry {
+                name: "DOT".to_string(),
+                score: 1000,
+            },
         ];
     }
     scores
@@ -31,5 +46,8 @@ pub fn add_score(name: String, score: u32) {
     scores.sort_by(|a, b| b.score.cmp(&a.score));
     scores.truncate(10);
     save_scores(&scores);
-    println!("Scores saved. Current top 3: {:?}", &scores.iter().take(3).collect::<Vec<_>>());
+    println!(
+        "Scores saved. Current top 3: {:?}",
+        &scores.iter().take(3).collect::<Vec<_>>()
+    );
 }

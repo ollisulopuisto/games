@@ -2,6 +2,14 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
+## [26.5.29.266] - 2026-05-29
+### Added
+- **Kissagotchi**: Added sound effects (click and meow) using procedurally generated wav files and `macroquad::audio`.
+- **Kissagotchi**: Added direct manipulation of the cat (touch screen friendly petting) to increase happiness.
+- **Kissagotchi**: Added iOS browser audio initialization fix (resumes AudioContext on first interaction).
+### Fixed
+- **Repo**: Formatted all games using `cargo fmt` for CI compliance.
+
 ## [26.5.29.265] - 2026-05-29
 ### Added
 - **Kissagotchi Polish:** Added ability to name the pet (touch and keyboard input).

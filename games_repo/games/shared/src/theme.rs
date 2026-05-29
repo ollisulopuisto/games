@@ -77,7 +77,7 @@ impl ThemeEngine {
             let loop_level = (level.saturating_sub(106) % 105) + 1;
             return self.get_suggested_theme_idx(loop_level);
         };
-        
+
         skin_num % self.themes.len()
     }
 }

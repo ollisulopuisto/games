@@ -1,14 +1,13 @@
+mod audio;
 mod game;
 mod input;
-mod audio;
 
-use macroquad::prelude::*;
-use crate::game::{Board, COLS, ROWS, Difficulty};
-use crate::input::InputManager;
 use crate::audio::AudioManager;
+use crate::game::{Board, Difficulty, COLS, ROWS};
+use crate::input::InputManager;
+use macroquad::prelude::*;
 
-const VERSION: &str = "26.05.29.265";
-
+const VERSION: &str = "26.05.29.266";
 
 #[derive(Clone, PartialEq, Debug)]
 enum AppState {
@@ -26,11 +25,15 @@ async fn main() {
     let mut state = AppState::Menu;
 
     // Load UI Icons
-    let tex_mute_on = Texture2D::from_file_with_format(include_bytes!("../../../assets/mute_on.png"), None);
-    let tex_mute_off = Texture2D::from_file_with_format(include_bytes!("../../../assets/mute_off.png"), None);
-    let tex_pause = Texture2D::from_file_with_format(include_bytes!("../../../assets/pause.png"), None);
-    let tex_play = Texture2D::from_file_with_format(include_bytes!("../../../assets/play.png"), None);
-    
+    let tex_mute_on =
+        Texture2D::from_file_with_format(include_bytes!("../../../assets/mute_on.png"), None);
+    let tex_mute_off =
+        Texture2D::from_file_with_format(include_bytes!("../../../assets/mute_off.png"), None);
+    let tex_pause =
+        Texture2D::from_file_with_format(include_bytes!("../../../assets/pause.png"), None);
+    let tex_play =
+        Texture2D::from_file_with_format(include_bytes!("../../../assets/play.png"), None);
+
     let mut last_update = get_time();
     let mut last_gravity = get_time();
     let drop_speed = 0.5;
@@ -38,7 +41,7 @@ async fn main() {
 
     loop {
         let dt = get_frame_time();
-        
+
         let virtual_width = 256.0;
         let virtual_height = 224.0;
         input.update(virtual_width, virtual_height);
@@ -48,7 +51,7 @@ async fn main() {
         let scale_x = sw / virtual_width;
         let scale_y = sh / virtual_height;
         let scale = scale_x.min(scale_y);
-        
+
         let vx = (sw - virtual_width * scale) / 2.0;
         let vy = (sh - virtual_height * scale) / 2.0;
 
@@ -70,7 +73,11 @@ async fn main() {
             let (mx, my) = mouse_position();
             if mx >= mute_x && mx <= mute_x + btn_size && my >= mute_y && my <= mute_y + btn_size {
                 audio.toggle_mute();
-            } else if mx >= pause_x && mx <= pause_x + btn_size && my >= pause_y && my <= pause_y + btn_size {
+            } else if mx >= pause_x
+                && mx <= pause_x + btn_size
+                && my >= pause_y
+                && my <= pause_y + btn_size
+            {
                 if state == AppState::Playing {
                     state = AppState::Paused;
                     audio.stop_music();
@@ -101,10 +108,10 @@ async fn main() {
                 } else if is_mouse_button_pressed(MouseButton::Left) {
                     let mx = mouse_position().0;
                     let my = mouse_position().1;
-                    
+
                     let btn_w = 100.0 * scale;
                     let btn_x = vx + (virtual_width / 2.0) * scale - btn_w / 2.0;
-                    
+
                     if mx >= btn_x && mx <= btn_x + btn_w {
                         if my >= vy + 80.0 * scale && my <= vy + 110.0 * scale {
                             board = Board::new(Difficulty::Easy);
@@ -226,21 +233,67 @@ async fn main() {
 
             // Draw HUD
             let hud_font_size = 15.0 * scale;
-            draw_text(&format!("SCORE: {:06}", board.score), vx + 10.0 * scale, vy + 20.0 * scale, hud_font_size, GREEN);
-            draw_text(&format!("LEVEL: {}", board.level), vx + 10.0 * scale, vy + 40.0 * scale, hud_font_size, YELLOW);
-            draw_text(&format!("LINES: {}", board.lines_cleared_total), vx + 10.0 * scale, vy + 60.0 * scale, hud_font_size, WHITE);
-            draw_text(&format!("MODE: {:?}", board.difficulty), vx + 10.0 * scale, vy + 80.0 * scale, hud_font_size, GRAY);
+            draw_text(
+                &format!("SCORE: {:06}", board.score),
+                vx + 10.0 * scale,
+                vy + 20.0 * scale,
+                hud_font_size,
+                GREEN,
+            );
+            draw_text(
+                &format!("LEVEL: {}", board.level),
+                vx + 10.0 * scale,
+                vy + 40.0 * scale,
+                hud_font_size,
+                YELLOW,
+            );
+            draw_text(
+                &format!("LINES: {}", board.lines_cleared_total),
+                vx + 10.0 * scale,
+                vy + 60.0 * scale,
+                hud_font_size,
+                WHITE,
+            );
+            draw_text(
+                &format!("MODE: {:?}", board.difficulty),
+                vx + 10.0 * scale,
+                vy + 80.0 * scale,
+                hud_font_size,
+                GRAY,
+            );
 
             // Draw UI Icons
-            let mute_tex = if audio.is_muted() { &tex_mute_on } else { &tex_mute_off };
-            draw_texture_ex(mute_tex, mute_x, mute_y, WHITE, DrawTextureParams {
-                dest_size: Some(vec2(btn_size, btn_size)), ..Default::default()
-            });
+            let mute_tex = if audio.is_muted() {
+                &tex_mute_on
+            } else {
+                &tex_mute_off
+            };
+            draw_texture_ex(
+                mute_tex,
+                mute_x,
+                mute_y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(btn_size, btn_size)),
+                    ..Default::default()
+                },
+            );
 
-            let pause_tex = if state == AppState::Paused { &tex_play } else { &tex_pause };
-            draw_texture_ex(pause_tex, pause_x, pause_y, WHITE, DrawTextureParams {
-                dest_size: Some(vec2(btn_size, btn_size)), ..Default::default()
-            });
+            let pause_tex = if state == AppState::Paused {
+                &tex_play
+            } else {
+                &tex_pause
+            };
+            draw_texture_ex(
+                pause_tex,
+                pause_x,
+                pause_y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(btn_size, btn_size)),
+                    ..Default::default()
+                },
+            );
 
             // Draw Next Piece
             let next_x = vx + virtual_width * scale - 60.0 * scale;
@@ -258,18 +311,30 @@ async fn main() {
             let text = "PAUSED";
             let font_size = 40.0 * scale;
             let dims = measure_text(text, None, font_size as u16, 1.0);
-            draw_text(text, sw / 2.0 - dims.width / 2.0, sh / 2.0, font_size, WHITE);
+            draw_text(
+                text,
+                sw / 2.0 - dims.width / 2.0,
+                sh / 2.0,
+                font_size,
+                WHITE,
+            );
         }
 
         if state == AppState::Menu {
             let title_size = 40.0 * scale;
             let text_size = 20.0 * scale;
             let center_x = vx + (virtual_width / 2.0) * scale;
-            
+
             let title = "GRAVITRIS";
             let t_dims = measure_text(title, None, title_size as u16, 1.0);
-            draw_text(title, center_x - t_dims.width / 2.0, vy + 60.0 * scale, title_size, MAGENTA);
-            
+            draw_text(
+                title,
+                center_x - t_dims.width / 2.0,
+                vy + 60.0 * scale,
+                title_size,
+                MAGENTA,
+            );
+
             let btn_w = 100.0 * scale;
             let btn_h = 30.0 * scale;
             let btn_x = center_x - btn_w / 2.0;
@@ -278,19 +343,37 @@ async fn main() {
             draw_rectangle(btn_x, vy + 80.0 * scale, btn_w, btn_h, GREEN);
             let e_text = "1: EASY";
             let e_dims = measure_text(e_text, None, text_size as u16, 1.0);
-            draw_text(e_text, center_x - e_dims.width / 2.0, vy + 102.0 * scale, text_size, BLACK);
+            draw_text(
+                e_text,
+                center_x - e_dims.width / 2.0,
+                vy + 102.0 * scale,
+                text_size,
+                BLACK,
+            );
 
             // Normal
             draw_rectangle(btn_x, vy + 120.0 * scale, btn_w, btn_h, YELLOW);
             let n_text = "2: NORMAL";
             let n_dims = measure_text(n_text, None, text_size as u16, 1.0);
-            draw_text(n_text, center_x - n_dims.width / 2.0, vy + 142.0 * scale, text_size, BLACK);
+            draw_text(
+                n_text,
+                center_x - n_dims.width / 2.0,
+                vy + 142.0 * scale,
+                text_size,
+                BLACK,
+            );
 
             // Hard
             draw_rectangle(btn_x, vy + 160.0 * scale, btn_w, btn_h, RED);
             let h_text = "3: HARD";
             let h_dims = measure_text(h_text, None, text_size as u16, 1.0);
-            draw_text(h_text, center_x - h_dims.width / 2.0, vy + 182.0 * scale, text_size, BLACK);
+            draw_text(
+                h_text,
+                center_x - h_dims.width / 2.0,
+                vy + 182.0 * scale,
+                text_size,
+                BLACK,
+            );
 
             // Controls Help
             let help_text = if input.touch_active {
@@ -300,7 +383,13 @@ async fn main() {
             };
             let h_size = 10.0 * scale;
             let h_dims = measure_text(help_text, None, h_size as u16, 1.0);
-            draw_text(help_text, center_x - h_dims.width / 2.0, vy + 205.0 * scale, h_size, WHITE);
+            draw_text(
+                help_text,
+                center_x - h_dims.width / 2.0,
+                vy + 205.0 * scale,
+                h_size,
+                WHITE,
+            );
 
             let help_text2 = if input.touch_active {
                 "P: Pause  M: Mute"
@@ -308,7 +397,13 @@ async fn main() {
                 "P: Pause  M: Mute"
             };
             let h_dims2 = measure_text(help_text2, None, h_size as u16, 1.0);
-            draw_text(help_text2, center_x - h_dims2.width / 2.0, vy + 218.0 * scale, h_size, WHITE);
+            draw_text(
+                help_text2,
+                center_x - h_dims2.width / 2.0,
+                vy + 218.0 * scale,
+                h_size,
+                WHITE,
+            );
         }
 
         // Draw Version
@@ -323,11 +418,17 @@ async fn main() {
             let font_size = 40.0 * scale;
             let dims = measure_text(text, None, font_size as u16, 1.0);
             draw_text(text, sw / 2.0 - dims.width / 2.0, sh / 2.0, font_size, RED);
-            
+
             let sub_text = "TAP to Restart";
             let sub_font_size = 20.0 * scale;
             let sub_dims = measure_text(sub_text, None, sub_font_size as u16, 1.0);
-            draw_text(sub_text, sw / 2.0 - sub_dims.width / 2.0, sh / 2.0 + 40.0 * scale, sub_font_size, WHITE);
+            draw_text(
+                sub_text,
+                sw / 2.0 - sub_dims.width / 2.0,
+                sh / 2.0 + 40.0 * scale,
+                sub_font_size,
+                WHITE,
+            );
         }
 
         next_frame().await;

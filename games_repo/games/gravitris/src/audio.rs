@@ -14,10 +14,10 @@ impl AudioManager {
     pub async fn new() -> Self {
         let seed: u32 = macroquad::rand::gen_range(0, 0x7FFFFFFF);
         let bpm = 90.0; // Much slower, more atmospheric
-        
+
         let mut arrangement = Arrangement::from_seed(seed);
         // Dorian scale for a more mysterious feel
-        arrangement.scale = [62, 64, 65, 67, 69, 71, 72, 74]; 
+        arrangement.scale = [62, 64, 65, 67, 69, 71, 72, 74];
         // Sparse, non-driving bassline (long notes)
         arrangement.bassline = [38, 38, 38, 38, 45, 45, 43, 43];
         // Ambient, drifting phrases
@@ -27,15 +27,15 @@ impl AudioManager {
             [0, 2, 0, -1, 0, 2, 4, 5],  // Drifting around root
             [12, 7, 5, 0, 12, 7, 5, 0], // Falling octaves
         ];
-        
+
         for i in 0..8 {
             arrangement.lead_tone[i] = Tone::Sine; // Mostly soft tones
             arrangement.drum_var[i] = 5; // Half-time groove
             arrangement.cp_active[i] = i % 3 == 0;
         }
-        
+
         let (wav, _) = generate_music_wav_with_arrangement(arrangement, bpm, None);
-        
+
         Self {
             rotate: load_sound_from_bytes(&generate_rotate_wav()).await.unwrap(),
             land: load_sound_from_bytes(&generate_land_wav()).await.unwrap(),
@@ -48,26 +48,50 @@ impl AudioManager {
 
     pub fn play_rotate(&self) {
         if !self.muted {
-            play_sound(&self.rotate, PlaySoundParams { looped: false, volume: 0.3 });
+            play_sound(
+                &self.rotate,
+                PlaySoundParams {
+                    looped: false,
+                    volume: 0.3,
+                },
+            );
         }
     }
 
     pub fn play_land(&self) {
         if !self.muted {
-            play_sound(&self.land, PlaySoundParams { looped: false, volume: 0.3 });
+            play_sound(
+                &self.land,
+                PlaySoundParams {
+                    looped: false,
+                    volume: 0.3,
+                },
+            );
         }
     }
 
     pub fn play_clear(&self) {
         if !self.muted {
-            play_sound(&self.clear, PlaySoundParams { looped: false, volume: 0.4 });
+            play_sound(
+                &self.clear,
+                PlaySoundParams {
+                    looped: false,
+                    volume: 0.4,
+                },
+            );
         }
     }
 
     pub fn play_music(&mut self) {
         if !self.muted {
             self.music_playing = true;
-            play_sound(&self.music, PlaySoundParams { looped: true, volume: 0.4 });
+            play_sound(
+                &self.music,
+                PlaySoundParams {
+                    looped: true,
+                    volume: 0.4,
+                },
+            );
         }
     }
 
@@ -103,7 +127,9 @@ fn generate_rotate_wav() -> Vec<u8> {
         samples.push((sample * amplitude * 10000.0) as i16);
     }
     let mut wav = create_wav_header((num_samples * 2) as u32, sample_rate);
-    for s in samples { wav.extend_from_slice(&s.to_le_bytes()); }
+    for s in samples {
+        wav.extend_from_slice(&s.to_le_bytes());
+    }
     wav
 }
 
@@ -115,12 +141,18 @@ fn generate_land_wav() -> Vec<u8> {
     for i in 0..num_samples {
         let t = i as f32 / sample_rate as f32;
         let freq = 100.0 * (1.0 - t / duration);
-        let sample = if (t * freq * 2.0 * std::f32::consts::PI).sin() > 0.0 { 0.5 } else { -0.5 };
+        let sample = if (t * freq * 2.0 * std::f32::consts::PI).sin() > 0.0 {
+            0.5
+        } else {
+            -0.5
+        };
         let amplitude = 1.0 - t / duration;
         samples.push((sample * amplitude * 8000.0) as i16);
     }
     let mut wav = create_wav_header((num_samples * 2) as u32, sample_rate);
-    for s in samples { wav.extend_from_slice(&s.to_le_bytes()); }
+    for s in samples {
+        wav.extend_from_slice(&s.to_le_bytes());
+    }
     wav
 }
 
@@ -137,6 +169,8 @@ fn generate_clear_wav() -> Vec<u8> {
         samples.push((sample * amplitude * 12000.0) as i16);
     }
     let mut wav = create_wav_header((num_samples * 2) as u32, sample_rate);
-    for s in samples { wav.extend_from_slice(&s.to_le_bytes()); }
+    for s in samples {
+        wav.extend_from_slice(&s.to_le_bytes());
+    }
     wav
 }

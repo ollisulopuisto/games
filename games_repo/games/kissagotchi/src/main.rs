@@ -1,5 +1,7 @@
 use macroquad::prelude::*;
 use serde::{Deserialize, Serialize};
+mod audio;
+use audio::AudioManager;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
@@ -150,6 +152,7 @@ impl Particle {
 #[macroquad::main("Kissagotchi")]
 async fn main() {
     let mut state = load_state_from_js().unwrap_or_default();
+    let audio = AudioManager::new().await;
 
     // Process offline progression
     let now = get_now_ms();
@@ -223,6 +226,27 @@ async fn main() {
             ),
         ];
 
+        let cat_face = if state.is_sleeping {
+            "^(-_-)^"
+        } else if state.sleepiness >= 90.0 || state.hunger <= 10.0 {
+            "^(T_T)^"
+        } else if state.happiness >= 80.0 {
+            "^(^_^)^"
+        } else {
+            "^(o_o)^"
+        };
+        let size = measure_text(cat_face, None, 80, 1.0);
+        let anim_offset = if state.is_sleeping {
+            (get_time() * 2.0).sin() as f32 * 5.0
+        } else if state.happiness >= 80.0 {
+            (get_time() * 5.0).sin() as f32 * 10.0
+        } else {
+            (get_time() * 3.0).sin() as f32 * 3.0
+        };
+        let cat_x = w / 2.0 - size.width / 2.0;
+        let cat_y = h / 2.0 + anim_offset;
+
+        let mut cat_petted = false;
         let mut clicked_btn = None;
         if is_mouse_button_pressed(MouseButton::Left) {
             let (mx, my) = mouse_position();
@@ -231,9 +255,16 @@ async fn main() {
                     clicked_btn = Some(i);
                 }
             }
+            if clicked_btn.is_none()
+                && mx >= cat_x
+                && mx <= cat_x + size.width
+                && my >= cat_y - 60.0
+                && my <= cat_y + 20.0
+            {
+                cat_petted = true;
+            }
         }
 
-        // Handle touches
         for touch in touches() {
             if touch.phase == TouchPhase::Started {
                 let mx = touch.position.x;
@@ -243,10 +274,19 @@ async fn main() {
                         clicked_btn = Some(i);
                     }
                 }
+                if clicked_btn.is_none()
+                    && mx >= cat_x
+                    && mx <= cat_x + size.width
+                    && my >= cat_y - 60.0
+                    && my <= cat_y + 20.0
+                {
+                    cat_petted = true;
+                }
             }
         }
 
         if let Some(idx) = clicked_btn {
+            audio.play_click();
             if idx == 0 {
                 state.feed();
                 for _ in 0..5 {
@@ -291,6 +331,23 @@ async fn main() {
                 }
             }
             save_state_to_js(&state);
+        }
+
+        if cat_petted && !state.is_sleeping {
+            audio.play_meow();
+            state.happiness = (state.happiness + 5.0).min(100.0);
+            for _ in 0..3 {
+                particles.push(Particle {
+                    x: w / 2.0,
+                    y: cat_y - 20.0,
+                    vx: rand::gen_range(-50.0, 50.0),
+                    vy: rand::gen_range(-50.0, -20.0),
+                    life: 1.0,
+                    max_life: 1.0,
+                    text: "<3".to_string(),
+                    color: PINK,
+                });
+            }
         }
 
         // Draw Buttons
@@ -350,33 +407,7 @@ async fn main() {
         }
 
         // Draw Cat
-        let cat_face = if state.is_sleeping {
-            "^(-_-)^"
-        } else if state.sleepiness >= 90.0 || state.hunger <= 10.0 {
-            "^(T_T)^"
-        } else if state.happiness >= 80.0 {
-            "^(^_^)^"
-        } else {
-            "^(o_o)^"
-        };
-
-        // Idle loop animations
-        let anim_offset = if state.is_sleeping {
-            (get_time() * 2.0).sin() as f32 * 5.0
-        } else if state.happiness >= 80.0 {
-            (get_time() * 5.0).sin() as f32 * 10.0
-        } else {
-            (get_time() * 3.0).sin() as f32 * 3.0
-        };
-
-        let size = measure_text(cat_face, None, 80, 1.0);
-        draw_text(
-            cat_face,
-            w / 2.0 - size.width / 2.0,
-            h / 2.0 + anim_offset,
-            80.0,
-            ORANGE,
-        );
+        draw_text(cat_face, cat_x, cat_y, 80.0, ORANGE);
 
         // Draw Name
         let name_display = format!("Name: {}", state.name);
