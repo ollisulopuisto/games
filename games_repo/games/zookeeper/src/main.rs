@@ -8,8 +8,8 @@ use macroquad::prelude::collections::storage;
 use macroquad::prelude::*;
 use quad_rand as qrand;
 use serde::{Deserialize, Serialize};
-use shared::leaderboard::GameMode;
 use shared::easing::ease_back_out;
+use shared::leaderboard::GameMode;
 use shared::touch_input::{get_grid_coords, keyboard_swap_target};
 
 /// The standard grid width for the game board.
@@ -17,8 +17,7 @@ const COLS: usize = 8;
 /// The standard grid height for the game board.
 const ROWS: usize = 8;
 /// The game version (CalVer).
-const VERSION: &str = "26.05.29.264";
-
+const VERSION: &str = "26.05.29.267";
 
 // Animation Constants
 const LEVEL_UP_TOTAL_DELAY: f32 = 1.0;
@@ -1601,13 +1600,9 @@ async fn main() {
                     color,
                 );
 
-                entry.mode.draw_icon(
-                    score_x + 10.0,
-                    y,
-                    font_size * 0.4,
-                    color,
-                    Some(&tex_snail),
-                );
+                entry
+                    .mode
+                    .draw_icon(score_x + 10.0, y, font_size * 0.4, color, Some(&tex_snail));
             }
             if (get_time() * 2.0) as i32 % 2 == 0 {
                 draw_text_centered("TAP TO RESTART", sh * 0.9, font_size * 0.7, YELLOW);

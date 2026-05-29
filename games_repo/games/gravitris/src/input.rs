@@ -102,10 +102,18 @@ impl InputManager {
 
                             if dist_x > threshold || dist_y > threshold {
                                 let dir_opt = if dist_x > dist_y {
-                                    if diff.x > 0.0 { Some(SwipeDir::Right) } else { Some(SwipeDir::Left) }
+                                    if diff.x > 0.0 {
+                                        Some(SwipeDir::Right)
+                                    } else {
+                                        Some(SwipeDir::Left)
+                                    }
                                 } else {
                                     // Only downward swipes are handled; upward swipes are ignored
-                                    if diff.y > 0.0 { Some(SwipeDir::Down) } else { None }
+                                    if diff.y > 0.0 {
+                                        Some(SwipeDir::Down)
+                                    } else {
+                                        None
+                                    }
                                 };
 
                                 // Mark as handled regardless so upward swipes don't become taps
@@ -143,7 +151,14 @@ impl InputManager {
         }
     }
 
-    pub fn draw_controls(&self, _vx: f32, _vy: f32, _scale: f32, _virtual_width: f32, _virtual_height: f32) {
+    pub fn draw_controls(
+        &self,
+        _vx: f32,
+        _vy: f32,
+        _scale: f32,
+        _virtual_width: f32,
+        _virtual_height: f32,
+    ) {
         // Virtual gamepad removed as requested.
     }
 }

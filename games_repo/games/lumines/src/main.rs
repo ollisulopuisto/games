@@ -11,9 +11,7 @@ use shared::theme::{BlockColor, BlockShape};
 
 const COLS: usize = 16;
 const ROWS: usize = 10;
-const VERSION: &str = "26.05.29.264";
-
-
+const VERSION: &str = "26.05.29.267";
 
 const BEATS_PER_SWEEP: f32 = 8.0;
 const FREEZE_DURATION: f32 = 4.0;
@@ -73,7 +71,7 @@ const MARKED_GLOW_THRESHOLD: f32 = 0.88; // pulse value above which the outer gl
 const FALL_GRAVITY: f32 = 32.0; // grid-units per second² for falling blocks
 const IMPACT_DURATION: f32 = 0.42; // seconds the impact/rebound effect lasts after landing
 const IMPACT_REBOUND_FREQ: f32 = 1.6; // oscillation cycles during rebound phase
-                                    // Shared layout constants
+                                      // Shared layout constants
 const HUD_MARGIN_RATIO: f32 = 0.03; // horizontal gutter as fraction of sw
 const BTN_SIZE_RATIO: f32 = 0.06; // pause/mute button size as fraction of sh
                                   // Landscape layout constants
@@ -1828,7 +1826,7 @@ impl Game {
             // --- Portrait (mobile) bottom info bar ---
             // Anchor the bar to the reserved bottom area so it stays fixed at the screen bottom.
             let bar_top = sh - bot_h;
-            
+
             // Shared info (LV, NEXT IN, THEME) – top of the bottom bar
             let info_y = bar_top + font_lg * 1.1;
 
@@ -1986,7 +1984,7 @@ impl Game {
             let rule_sz = (sh * 0.025).clamp(14.0, 22.0);
             let rule_spacing = rule_sz * 1.2;
             let mut current_y = sh * 0.4;
-            
+
             let rules = [
                 "Match 2x2 blocks of same color",
                 "The sweep line clears matches",
@@ -2116,7 +2114,9 @@ impl Game {
                     draw_text(&score_str, score_x - sem.width, y, entry_sz, color);
 
                     // Mode indicator
-                    entry.mode.draw_icon(score_x + 10.0, y, entry_sz * 0.7, color, None);
+                    entry
+                        .mode
+                        .draw_icon(score_x + 10.0, y, entry_sz * 0.7, color, None);
                 }
             }
 
@@ -2311,13 +2311,13 @@ mod tests {
         let easy_1 = drop_interval_for_level(1, GameMode::Easy);
         let normal_1 = drop_interval_for_level(1, GameMode::Normal);
         let hard_1 = drop_interval_for_level(1, GameMode::Hard);
-        
+
         assert!(easy_1 > normal_1);
         assert!(normal_1 > hard_1);
 
         let easy_10 = drop_interval_for_level(10, GameMode::Easy);
         let normal_10 = drop_interval_for_level(10, GameMode::Normal);
-        
+
         assert!(easy_1 > easy_10);
         assert!(easy_10 > normal_10);
     }
