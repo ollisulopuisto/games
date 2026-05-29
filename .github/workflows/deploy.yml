@@ -56,7 +56,7 @@ jobs:
           fi
 
           CHANGED_GAMES=""
-          for game in zookeeper bubbles lumines gravitris; do
+          for game in zookeeper bubbles lumines gravitris kissagotchi; do
             if echo "$CHANGED_FILES" | grep -q "^games_repo/games/$game/"; then
               CHANGED_GAMES="$CHANGED_GAMES $game"
             fi
@@ -102,7 +102,9 @@ jobs:
           sudo apt-get install -y libasound2-dev libx11-dev libxi-dev libgl1-mesa-dev libxcursor-dev libxinerama-dev libxrandr-dev lld
 
       - name: Run Tests
-        run: cargo test --workspace --all-targets --all-features
+        run: |
+          cargo test --workspace --all-targets --all-features
+          cd games_repo && make setup && make test && make lint
 
       - name: Install binaryen (wasm-opt)
         run: sudo apt-get install -y binaryen

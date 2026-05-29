@@ -1,4 +1,4 @@
-GAMES := zookeeper bubbles lumines gravitris music_editor
+GAMES := zookeeper bubbles lumines gravitris music_editor kissagotchi
 VERSION := v26.4.30.256
 
 # Define icons for each game (img tag or span for emoji)
@@ -9,6 +9,7 @@ ICON_gravitris := <span style="font-size: 5rem; margin-bottom: 1rem;">🧲</span
 ICON_music_editor := <span style="font-size: 5rem; margin-bottom: 1rem;">🎵</span>
 ICON_jetpac    := <img src="assets/1f680.png" alt="Jetpac">
 ICON_voxeldash := <span style="font-size: 5rem; margin-bottom: 1rem;">📦</span>
+ICON_kissagotchi := <span style="font-size: 5rem; margin-bottom: 1rem;">🐱</span>
 
 # Define display names
 NAME_zookeeper := Zookeeper
@@ -18,6 +19,7 @@ NAME_gravitris := Gravitris
 NAME_music_editor := Music Editor
 NAME_jetpac    := Jetpac
 NAME_voxeldash := VoxelDash
+NAME_kissagotchi := Kissagotchi
 
 # Define control descriptions
 CTRL_zookeeper := Swap gems with mouse / touch.<br><b>P</b> to Pause.
@@ -25,6 +27,7 @@ CTRL_bubbles   := Arrow keys / WASD to move &amp; jump.<br>SPACE to blow bubbles
 CTRL_lumines   := Arrow keys / WASD to move &amp; rotate.<br>SPACE to drop. <b>P</b> to Pause.
 CTRL_gravitris := Ambient Tetris. Arrows/WASD to move.<br>SPACE to drop. <b>P</b> to Pause, <b>M</b> to Mute.
 CTRL_music_editor := Procedural music pattern editor.<br><b>Randomize</b> to generate new patterns.
+CTRL_kissagotchi := Pidä huolta kissasta.<br>Syötä, leiki ja nukuta.
 
 .PHONY: all setup build test lint clean rename index.html $(GAMES)
 
