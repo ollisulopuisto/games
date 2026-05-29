@@ -33,31 +33,31 @@
             saved_state = localStorage.getItem("kissagotchi_state") || "";
         }
 
-        class KissagotchiPlugin {
-            constructor() {
-                this.name = "KissagotchiPlugin";
-            }
-            import_object() {
-                return {
-                    env: {
-                        js_get_state_len: function() {
-                            update_saved_state_cache();
-                            return lengthBytesUTF8(saved_state);
-                        },
-                        js_get_state: function(ptr) {
-                            stringToUTF8(saved_state, ptr, saved_state.length + 10);
-                        },
-                        js_save_state: function(ptr) {
-                            localStorage.setItem("kissagotchi_state", UTF8ToString(ptr));
-                        },
-                        js_get_now_ms: function() {
-                            return Date.now();
-                        }
-                    }
+        miniquad_add_plugin({
+            name: "kissagotchi",
+            version: 1,
+            register_plugin: function(importObject) {
+                importObject.env.js_get_state_len = function() {
+                    update_saved_state_cache();
+                    return new TextEncoder().encode(saved_state).length;
+                };
+                importObject.env.js_get_state = function(ptr) {
+                    var encoded = new TextEncoder().encode(saved_state);
+                    var mem = new Uint8Array(wasm_memory.buffer, ptr, encoded.length);
+                    mem.set(encoded);
+                };
+                importObject.env.js_save_state = function(ptr) {
+                    var mem = new Uint8Array(wasm_memory.buffer, ptr);
+                    var len = 0;
+                    while (mem[len] !== 0) len++;
+                    var str = new TextDecoder().decode(mem.subarray(0, len));
+                    localStorage.setItem("kissagotchi_state", str);
+                };
+                importObject.env.js_get_now_ms = function() {
+                    return Date.now();
                 };
             }
-        }
-        register_plugin(new KissagotchiPlugin());
+        });
 
         load("kissagotchi_wasm.wasm");
     </script>
