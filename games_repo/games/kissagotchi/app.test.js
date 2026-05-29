@@ -18,7 +18,7 @@ describe('Kissagotchi TDD', () => {
 
     it('should initialize with max stats', () => {
         const game = new Kissagotchi();
-        expect(game.state.hunger).toBe(100);
+        expect(game.state.satiety).toBe(100);
         expect(game.state.happiness).toBe(100);
         expect(game.state.energy).toBe(100);
     });
@@ -26,16 +26,16 @@ describe('Kissagotchi TDD', () => {
     it('should decrease stats over time', () => {
         const game = new Kissagotchi();
         game.gameLoop();
-        expect(game.state.hunger).toBeLessThan(100);
+        expect(game.state.satiety).toBeLessThan(100);
         expect(game.state.happiness).toBeLessThan(100);
         expect(game.state.energy).toBeLessThan(100);
     });
 
-    it('should increase hunger when feeding', () => {
+    it('should increase satiety when feeding', () => {
         const game = new Kissagotchi();
-        game.state.hunger = 50; // Artificially lower it
+        game.state.satiety = 50; // Artificially lower it
         game.feed();
-        expect(game.state.hunger).toBe(70);
+        expect(game.state.satiety).toBe(70);
         expect(game.state.energy).toBe(100); // capped at 100
     });
 
@@ -45,7 +45,7 @@ describe('Kissagotchi TDD', () => {
         game.play();
         expect(game.state.happiness).toBe(70);
         expect(game.state.energy).toBe(85); // 100 - 15
-        expect(game.state.hunger).toBe(90); // 100 - 10
+        expect(game.state.satiety).toBe(90); // 100 - 10
     });
 
     it('should not allow playing when too tired', () => {

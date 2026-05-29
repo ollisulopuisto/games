@@ -7,7 +7,7 @@ use crate::game::{Board, COLS, ROWS, Difficulty};
 use crate::input::InputManager;
 use crate::audio::AudioManager;
 
-const VERSION: &str = "26.05.29.258";
+const VERSION: &str = "26.05.29.259";
 
 
 #[derive(Clone, PartialEq, Debug)]
