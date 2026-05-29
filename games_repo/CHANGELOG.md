@@ -2,6 +2,11 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
+## [26.5.29.264] - 2026-05-29
+### Fixed
+- **Kissagotchi UX:** Fixed UI element overlap on WASM by correctly setting HTML canvas sizing.
+
+
 ## [26.5.29.262] - 2026-04-30
 ### Fixed
 - **Zookeeper UX Polish:** Removed the abrupt level transition. The game now ensures the final match animation and subsequent tile falling are fully completed before showing the "Level Clear" screen, providing better visual feedback for the final move.
