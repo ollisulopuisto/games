@@ -57,10 +57,12 @@ fn generate_click_wav() -> Vec<u8> {
     let duration = 0.05;
     let num_samples = (sample_rate as f32 * duration) as usize;
     let mut samples = Vec::with_capacity(num_samples);
+    let mut phase = 0.0;
     for i in 0..num_samples {
         let t = i as f32 / sample_rate as f32;
         let freq = 800.0 * (1.0 - t / duration);
-        let sample = if (t * freq * 2.0 * std::f32::consts::PI).sin() > 0.0 {
+        phase += freq * 2.0 * std::f32::consts::PI / sample_rate as f32;
+        let sample = if phase.sin() > 0.0 {
             0.3
         } else {
             -0.3
@@ -80,10 +82,12 @@ fn generate_meow_wav() -> Vec<u8> {
     let duration = 0.4;
     let num_samples = (sample_rate as f32 * duration) as usize;
     let mut samples = Vec::with_capacity(num_samples);
+    let mut phase = 0.0;
     for i in 0..num_samples {
         let t = i as f32 / sample_rate as f32;
         let freq = 600.0 + 300.0 * (t * std::f32::consts::PI * 2.0).sin();
-        let sample = (t * freq * 2.0 * std::f32::consts::PI).sin();
+        phase += freq * 2.0 * std::f32::consts::PI / sample_rate as f32;
+        let sample = phase.sin();
         let amplitude = (1.0 - t / duration).powi(2);
         samples.push((sample * amplitude * 16383.0) as i16);
     }

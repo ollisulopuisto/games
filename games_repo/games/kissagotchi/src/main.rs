@@ -409,14 +409,22 @@ async fn main() {
         // Draw Cat
         draw_text(cat_face, cat_x, cat_y, 80.0, ORANGE);
 
-        // Draw Name
-        let name_display = format!("Name: {}", state.name);
-        let name_size = measure_text(&name_display, None, 30, 1.0);
+        // Draw Name Input Box
+        let input_rect_x = w / 2.0 - 100.0;
+        let input_rect_y = 20.0;
+        let input_rect_w = 200.0;
+        let input_rect_h = 40.0;
+        draw_rectangle(input_rect_x, input_rect_y, input_rect_w, input_rect_h, Color::new(0.2, 0.2, 0.3, 1.0));
+        draw_rectangle_lines(input_rect_x, input_rect_y, input_rect_w, input_rect_h, 2.0, GRAY);
+
+        let cursor = if (get_time() * 2.0).sin() > 0.0 { "_" } else { "" };
+        let name_display = format!("Name: {}{}", state.name, cursor);
+        let name_size = measure_text(&name_display, None, 24, 1.0);
         draw_text(
             &name_display,
-            w / 2.0 - name_size.width / 2.0,
-            40.0,
-            30.0,
+            input_rect_x + input_rect_w / 2.0 - name_size.width / 2.0,
+            input_rect_y + 28.0,
+            24.0,
             WHITE,
         );
 
