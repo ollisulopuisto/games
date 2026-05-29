@@ -16,7 +16,13 @@ struct State {
     sleepiness: f32,
     energy: f32,
     is_sleeping: bool,
+    #[serde(default = "default_name")]
+    name: String,
     last_updated: f64,
+}
+
+fn default_name() -> String {
+    "Kitty".to_string()
 }
 
 fn get_now_ms() -> f64 {
@@ -42,6 +48,7 @@ impl Default for State {
             sleepiness: 0.0,
             energy: 100.0,
             is_sleeping: false,
+            name: default_name(),
             last_updated: get_now_ms(),
         }
     }
@@ -51,6 +58,7 @@ impl State {
     fn update(&mut self, dt: f32) {
         if self.is_sleeping {
             self.energy += 2.0 * dt;
+            self.sleepiness = (self.sleepiness - 1.0 * dt).max(0.0);
             if self.energy >= 100.0 {
                 self.energy = 100.0;
                 self.is_sleeping = false;
@@ -64,13 +72,17 @@ impl State {
     }
 
     fn feed(&mut self) {
-        if self.is_sleeping { return; }
+        if self.is_sleeping {
+            return;
+        }
         self.hunger = (self.hunger + 30.0).min(100.0);
         self.happiness = (self.happiness + 5.0).min(100.0);
     }
 
     fn play(&mut self) {
-        if self.is_sleeping { return; }
+        if self.is_sleeping {
+            return;
+        }
         self.happiness = (self.happiness + 20.0).min(100.0);
         self.energy = (self.energy - 10.0).max(0.0);
         self.hunger = (self.hunger - 5.0).max(0.0);
@@ -138,7 +150,7 @@ impl Particle {
 #[macroquad::main("Kissagotchi")]
 async fn main() {
     let mut state = load_state_from_js().unwrap_or_default();
-    
+
     // Process offline progression
     let now = get_now_ms();
     let diff_ms = now - state.last_updated;
@@ -151,27 +163,42 @@ async fn main() {
         }
     }
     state.last_updated = now;
-    
+
     let mut particles: Vec<Particle> = Vec::new();
     let mut last_save = get_now_ms();
+
+    let mut name_input = shared::input::TextInput::new(12, state.name.clone());
 
     loop {
         let dt = get_frame_time();
         state.update(dt);
-        
+
         let now = get_now_ms();
         state.last_updated = now;
-        
+
         // Save every 2 seconds
         if now - last_save > 2000.0 {
             save_state_to_js(&state);
             last_save = now;
         }
 
-        clear_background(Color::new(0.1, 0.1, 0.18, 1.0));
+        // Handle name input
+        #[cfg(target_arch = "wasm32")]
+        let is_mobile = shared::platform::is_mobile();
+        #[cfg(not(target_arch = "wasm32"))]
+        let is_mobile = false;
 
         let w = screen_width();
         let h = screen_height();
+
+        name_input.update_with_touch(
+            (w / 2.0 - 100.0, 20.0, 200.0, 40.0),
+            (0.0, 0.0, 0.0, 0.0),
+            is_mobile,
+        );
+        state.name = name_input.content.clone();
+
+        clear_background(Color::new(0.1, 0.1, 0.18, 1.0));
 
         // UI Buttons
         let btn_w = 100.0;
@@ -182,8 +209,18 @@ async fn main() {
 
         let buttons = [
             ("Feed", start_x, btn_y, Color::new(0.3, 0.8, 0.3, 1.0)),
-            ("Play", start_x + btn_w + gap, btn_y, Color::new(0.3, 0.5, 0.9, 1.0)),
-            ("Sleep", start_x + (btn_w + gap) * 2.0, btn_y, Color::new(0.6, 0.3, 0.8, 1.0)),
+            (
+                "Play",
+                start_x + btn_w + gap,
+                btn_y,
+                Color::new(0.3, 0.5, 0.9, 1.0),
+            ),
+            (
+                "Sleep",
+                start_x + (btn_w + gap) * 2.0,
+                btn_y,
+                Color::new(0.6, 0.3, 0.8, 1.0),
+            ),
         ];
 
         let mut clicked_btn = None;
@@ -195,7 +232,7 @@ async fn main() {
                 }
             }
         }
-        
+
         // Handle touches
         for touch in touches() {
             if touch.phase == TouchPhase::Started {
@@ -260,7 +297,13 @@ async fn main() {
         for &(label, bx, by, color) in &buttons {
             draw_rectangle(bx, by, btn_w, btn_h, color);
             let size = measure_text(label, None, 20, 1.0);
-            draw_text(label, bx + btn_w / 2.0 - size.width / 2.0, by + btn_h / 2.0 + size.height / 2.0, 20.0, WHITE);
+            draw_text(
+                label,
+                bx + btn_w / 2.0 - size.width / 2.0,
+                by + btn_h / 2.0 + size.height / 2.0,
+                20.0,
+                WHITE,
+            );
         }
 
         // Draw Stats
@@ -270,14 +313,14 @@ async fn main() {
             format!("Sleepiness: {:.0}%", state.sleepiness),
             format!("Energy: {:.0}%", state.energy),
         ];
-        
+
         let bar_w = 200.0;
         let bar_h = 15.0;
         let mut text_y = 40.0;
-        
+
         for (i, stat_text) in stats.iter().enumerate() {
             draw_text(stat_text, 20.0, text_y, 24.0, WHITE);
-            
+
             // Draw progress bar
             let val = match i {
                 0 => state.hunger,
@@ -286,34 +329,65 @@ async fn main() {
                 3 => state.energy,
                 _ => 0.0,
             };
-            
+
             draw_rectangle(20.0, text_y + 10.0, bar_w, bar_h, DARKGRAY);
-            let fill_color = if val < 20.0 { RED } else if val > 80.0 { GREEN } else { YELLOW };
-            draw_rectangle(20.0, text_y + 10.0, bar_w * (val / 100.0), bar_h, fill_color);
-            
+            let fill_color = if val < 20.0 {
+                RED
+            } else if val > 80.0 {
+                GREEN
+            } else {
+                YELLOW
+            };
+            draw_rectangle(
+                20.0,
+                text_y + 10.0,
+                bar_w * (val / 100.0),
+                bar_h,
+                fill_color,
+            );
+
             text_y += 50.0;
         }
 
         // Draw Cat
         let cat_face = if state.is_sleeping {
-            "(-_-)"
+            "^(-_-)^"
         } else if state.sleepiness >= 90.0 || state.hunger <= 10.0 {
-            "(T_T)"
+            "^(T_T)^"
         } else if state.happiness >= 80.0 {
-            "(^_^)"
+            "^(^_^)^"
         } else {
-            "(o_o)"
+            "^(o_o)^"
         };
-        
-        // Wobble effect if happy
-        let wobble = if state.happiness >= 80.0 && !state.is_sleeping {
+
+        // Idle loop animations
+        let anim_offset = if state.is_sleeping {
+            (get_time() * 2.0).sin() as f32 * 5.0
+        } else if state.happiness >= 80.0 {
             (get_time() * 5.0).sin() as f32 * 10.0
         } else {
-            0.0
+            (get_time() * 3.0).sin() as f32 * 3.0
         };
 
         let size = measure_text(cat_face, None, 80, 1.0);
-        draw_text(cat_face, w / 2.0 - size.width / 2.0, h / 2.0 + wobble, 80.0, ORANGE);
+        draw_text(
+            cat_face,
+            w / 2.0 - size.width / 2.0,
+            h / 2.0 + anim_offset,
+            80.0,
+            ORANGE,
+        );
+
+        // Draw Name
+        let name_display = format!("Name: {}", state.name);
+        let name_size = measure_text(&name_display, None, 30, 1.0);
+        draw_text(
+            &name_display,
+            w / 2.0 - name_size.width / 2.0,
+            40.0,
+            30.0,
+            WHITE,
+        );
 
         // Update and Draw Particles
         for p in &mut particles {
@@ -339,6 +413,7 @@ mod tests {
         let state = State::default();
         assert_eq!(state.hunger, 50.0);
         assert_eq!(state.energy, 100.0);
+        assert_eq!(state.name, "Kitty");
         assert!(!state.is_sleeping);
     }
 
@@ -377,7 +452,7 @@ mod tests {
         state.update(10.0);
         assert_eq!(state.energy, 70.0);
         assert!(state.is_sleeping);
-        
+
         state.update(20.0);
         assert_eq!(state.energy, 100.0);
         assert!(!state.is_sleeping); // Wakes up automatically

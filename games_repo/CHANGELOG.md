@@ -2,6 +2,13 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
+## [26.5.29.265] - 2026-05-29
+### Added
+- **Kissagotchi Polish:** Added ability to name the pet (touch and keyboard input).
+- **Kissagotchi Animations:** Added "ears" to the cat face and a breathing/wobble idle loop animation.
+### Fixed
+- **Kissagotchi Logic:** Fixed an issue where the cat's sleepiness would not decrease while sleeping.
+
 ## [26.5.29.264] - 2026-05-29
 ### Fixed
 - **Kissagotchi UX:** Fixed UI element overlap on WASM by correctly setting HTML canvas sizing.
