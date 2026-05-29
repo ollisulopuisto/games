@@ -11,7 +11,7 @@ use crate::input::InputManager;
 use macroquad::prelude::*;
 
 #[allow(dead_code)]
-const VERSION: &str = "26.05.29.266";
+const VERSION: &str = "26.05.29.267";
 
 #[derive(Clone, PartialEq, Debug)]
 enum AppState {
