@@ -259,7 +259,7 @@ pub fn generate_music_wav_with_arrangement(
                     // Triplet-fill drum pattern
                     let triplet_idx = (t_in_bar / bar_triplet_duration) as usize;
                     let t_triplet = t_in_bar % bar_triplet_duration;
-                    if triplet_idx % 3 == 0 && t_triplet < 0.15 {
+                    if triplet_idx.is_multiple_of(3) && t_triplet < 0.15 {
                         let kf = 160.0 * (1.0 - t_triplet / 0.15).powf(2.5) + 45.0;
                         kick = (t_triplet * kf * 2.0 * std::f32::consts::PI).sin()
                             * 0.7
@@ -275,7 +275,7 @@ pub fn generate_music_wav_with_arrangement(
                 _ => {
                     // Original / Basic patterns
                     if d_var == 2 {
-                        if beat_idx % 2 == 0 && t_beat < 0.18 {
+                        if beat_idx.is_multiple_of(2) && t_beat < 0.18 {
                             let kf = 160.0 * (1.0 - t_beat / 0.18).powf(2.5) + 45.0;
                             kick = (t_beat * kf * 2.0 * std::f32::consts::PI).sin()
                                 * 0.7
@@ -390,7 +390,7 @@ pub fn generate_music_wav_with_arrangement(
                     let s_step = arrangement.phrases[0][step_in_phrase];
                     
                     let s_freq = midi_to_freq(s_notes[s_step.rem_euclid(s_notes.len() as i32) as usize] + key_offset);
-                    let gate = if (sixteen_idx % 4 == 0) || (phrase_idx > 1 && sixteen_idx % 2 == 0)
+                    let gate = if (sixteen_idx.is_multiple_of(4)) || (phrase_idx > 1 && sixteen_idx.is_multiple_of(2))
                     {
                         (1.0 - t_sixteen / bar_sixteen_duration).powf(0.5)
                     } else {

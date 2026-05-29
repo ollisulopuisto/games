@@ -60,6 +60,7 @@ pub fn is_ios() -> bool {
 }
 
 /// Convert screen coordinates into board cell indices.
+#[allow(clippy::too_many_arguments)]
 pub fn get_grid_coords(
     mx: f32,
     my: f32,
@@ -85,6 +86,7 @@ pub fn get_grid_coords(
 }
 
 /// Resolve keyboard direction input into a valid adjacent swap target.
+#[allow(clippy::too_many_arguments)]
 pub fn keyboard_swap_target(
     sx: usize,
     sy: usize,
