@@ -187,7 +187,7 @@ async fn main() {
 
         // Handle name input
         #[cfg(target_arch = "wasm32")]
-        let is_mobile = shared::platform::is_mobile();
+        let is_mobile = shared::touch_input::is_mobile();
         #[cfg(not(target_arch = "wasm32"))]
         let is_mobile = false;
 

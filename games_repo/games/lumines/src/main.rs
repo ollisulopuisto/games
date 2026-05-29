@@ -11,7 +11,7 @@ use shared::theme::{BlockColor, BlockShape};
 
 const COLS: usize = 16;
 const ROWS: usize = 10;
-const VERSION: &str = "26.05.29.267";
+const VERSION: &str = "26.05.29.266";
 
 const BEATS_PER_SWEEP: f32 = 8.0;
 const FREEZE_DURATION: f32 = 4.0;
@@ -94,8 +94,6 @@ const PORTRAIT_METER_H_RATIO: f32 = 0.14; // FREEZE bar height relative to bot_h
 
 const MAX_HIGH_SCORES: usize = 10;
 const MAX_NAME_LENGTH: usize = 10;
-#[cfg(target_arch = "wasm32")]
-const MOBILE_POPUP_MAX_WIDTH: f32 = 600.0;
 
 use shared::leaderboard::GameMode;
 
