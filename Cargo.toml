@@ -6,11 +6,12 @@ members = [
     "games_repo/games/lumines",
     "games_repo/games/music_editor",
     "games_repo/games/gravitris",
+    "games_repo/games/kissagotchi",
 ]
 resolver = "2"
 
 [profile.release]
-lto = true
+lto = "thin"
 opt-level = "z"
 codegen-units = 1
 panic = "abort"
