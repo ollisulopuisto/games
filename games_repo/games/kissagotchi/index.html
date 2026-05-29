@@ -1,78 +1,65 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kissatamagotchi</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Kissagotchi</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none; /* Prevent scroll on mobile */
+        }
+        canvas {
+            display: block;
+            max-width: 100vw;
+            max-height: 100vh;
+            image-rendering: pixelated;
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <h1>Kissagotchi</h1>
-        </header>
-        
-        <main>
-            <div class="status-bars">
-                <div class="stat-container">
-                    <label>Nälkä</label>
-                    <div class="bar-bg"><div class="bar-fill" id="hunger-bar"></div></div>
-                </div>
-                <div class="stat-container">
-                    <label>Ilo</label>
-                    <div class="bar-bg"><div class="bar-fill" id="happiness-bar"></div></div>
-                </div>
-                <div class="stat-container">
-                    <label>Energia</label>
-                    <div class="bar-bg"><div class="bar-fill" id="energy-bar"></div></div>
-                </div>
-            </div>
+    <canvas id="glcanvas" tabindex='1'></canvas>
+    <script src="mq_js_bundle.js"></script>
+    <script>
+        let saved_state = "";
+        function update_saved_state_cache() {
+            saved_state = localStorage.getItem("kissagotchi_state") || "";
+        }
 
-            <div class="pet-display">
-                <div class="cat-container" id="cat">
-                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Cat Body -->
-                        <circle cx="100" cy="120" r="60" fill="#FFB7A1" class="cat-body"/>
-                        <!-- Ears -->
-                        <polygon points="40,80 60,30 90,65" fill="#FFB7A1" />
-                        <polygon points="160,80 140,30 110,65" fill="#FFB7A1" />
-                        <polygon points="48,75 60,45 80,68" fill="#FF9A7B" />
-                        <polygon points="152,75 140,45 120,68" fill="#FF9A7B" />
-                        <!-- Eyes -->
-                        <circle cx="75" cy="110" r="8" fill="#4A4A4A" class="eye left-eye"/>
-                        <circle cx="125" cy="110" r="8" fill="#4A4A4A" class="eye right-eye"/>
-                        <!-- Nose -->
-                        <polygon points="95,125 105,125 100,132" fill="#FF7B9A" />
-                        <!-- Mouth -->
-                        <path d="M 90 135 Q 95 142 100 135 Q 105 142 110 135" fill="none" stroke="#4A4A4A" stroke-width="3" stroke-linecap="round" />
-                        <!-- Whiskers -->
-                        <path d="M 60 120 L 30 115" stroke="#4A4A4A" stroke-width="2" stroke-linecap="round" />
-                        <path d="M 60 125 L 30 125" stroke="#4A4A4A" stroke-width="2" stroke-linecap="round" />
-                        <path d="M 140 120 L 170 115" stroke="#4A4A4A" stroke-width="2" stroke-linecap="round" />
-                        <path d="M 140 125 L 170 125" stroke="#4A4A4A" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                    <div id="status-message" class="status-message">Miau!</div>
-                </div>
-            </div>
+        class KissagotchiPlugin {
+            constructor() {
+                this.name = "KissagotchiPlugin";
+            }
+            import_object() {
+                return {
+                    env: {
+                        js_get_state_len: function() {
+                            update_saved_state_cache();
+                            return lengthBytesUTF8(saved_state);
+                        },
+                        js_get_state: function(ptr) {
+                            stringToUTF8(saved_state, ptr, saved_state.length + 10);
+                        },
+                        js_save_state: function(ptr) {
+                            localStorage.setItem("kissagotchi_state", UTF8ToString(ptr));
+                        },
+                        js_get_now_ms: function() {
+                            return Date.now();
+                        }
+                    }
+                };
+            }
+        }
+        register_plugin(new KissagotchiPlugin());
 
-            <div class="actions">
-                <button id="btn-feed" class="action-btn">
-                    <span class="icon">🐟</span>
-                    Syötä
-                </button>
-                <button id="btn-play" class="action-btn">
-                    <span class="icon">🧶</span>
-                    Leiki
-                </button>
-                <button id="btn-sleep" class="action-btn">
-                    <span class="icon">💤</span>
-                    Nukuta
-                </button>
-            </div>
-        </main>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="app.js"></script>
+        load("kissagotchi_wasm.wasm");
+    </script>
 </body>
 </html>

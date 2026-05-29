@@ -11,7 +11,7 @@ use crate::input::InputManager;
 use crate::game::{Game, VIRTUAL_WIDTH, HUD_HEIGHT, PLAY_HEIGHT};
 
 #[allow(dead_code)]
-const VERSION: &str = "26.05.29.262";
+const VERSION: &str = "26.05.29.263";
 
 #[derive(Clone, PartialEq, Debug)]
 enum AppState {
