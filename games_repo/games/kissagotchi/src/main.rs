@@ -102,7 +102,7 @@ impl State {
             if self.poop_timer > 0.0 {
                 self.poop_timer -= dt;
             } else {
-                self.poop_count += 1;
+                self.poop_count = (self.poop_count + 1).min(50);
                 self.poop_timer = 120.0; // Every 120 real/simulated seconds
             }
 
@@ -267,10 +267,28 @@ async fn main() {
             
             draw_circle(laser_x, laser_y, 10.0, RED);
 
+            let mut mx = 0.0;
+            let mut my = 0.0;
+            let mut interacted = false;
+
             if is_mouse_button_pressed(MouseButton::Left) {
-                let (mx, my) = mouse_position();
+                let (x, y) = mouse_position();
+                mx = x;
+                my = y;
+                interacted = true;
+            }
+
+            for touch in touches() {
+                if touch.phase == TouchPhase::Started {
+                    mx = touch.position.x;
+                    my = touch.position.y;
+                    interacted = true;
+                }
+            }
+
+            if interacted {
                 let dist = ((mx - laser_x).powi(2) + (my - laser_y).powi(2)).sqrt();
-                if dist < 30.0 {
+                if dist < 40.0 {
                     state.play();
                     audio.play_click();
                     laser_vx = macroquad::rand::gen_range(-400.0, 400.0);
@@ -294,11 +312,8 @@ async fn main() {
             let back_y = h - 60.0;
             draw_rectangle(back_x, back_y, 100.0, 40.0, GRAY);
             draw_text("Back", back_x + 10.0, back_y + 30.0, 30.0, WHITE);
-            if is_mouse_button_pressed(MouseButton::Left) {
-                let (mx, my) = mouse_position();
-                if mx >= back_x && mx <= back_x + 100.0 && my >= back_y && my <= back_y + 40.0 {
-                    in_minigame = false;
-                }
+            if interacted && mx >= back_x && mx <= back_x + 100.0 && my >= back_y && my <= back_y + 40.0 {
+                in_minigame = false;
             }
 
             // Update and Draw Particles
@@ -619,20 +634,32 @@ async fn main() {
         let mut poop_cleaned = false;
         let mut mx = 0.0;
         let mut my = 0.0;
+        let mut interacted = false;
+
         if is_mouse_button_pressed(MouseButton::Left) {
             let (x, y) = mouse_position();
             mx = x;
             my = y;
+            interacted = true;
         }
+
+        for touch in touches() {
+            if touch.phase == TouchPhase::Started {
+                mx = touch.position.x;
+                my = touch.position.y;
+                interacted = true;
+            }
+        }
+
+        let poop_size = measure_text("💩", None, 40, 1.0);
 
         for i in 0..state.poop_count {
             let px = w / 2.0 - 100.0 + ((i * 53) % 200) as f32;
             let py = cat_y + 40.0 + ((i * 29) % 50) as f32;
             
-            let poop_size = measure_text("💩", None, 40, 1.0);
             draw_text("💩", px, py, 40.0, WHITE);
             
-            if mx >= px && mx <= px + poop_size.width && my >= py - 40.0 && my <= py {
+            if interacted && mx >= px && mx <= px + poop_size.width && my >= py - 40.0 && my <= py {
                 poop_cleaned = true;
             }
         }
