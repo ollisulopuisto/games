@@ -103,17 +103,13 @@ impl State {
     }
 
     fn feed(&mut self) {
-        if self.is_sleeping {
-            return;
-        }
+        self.is_sleeping = false;
         self.hunger = (self.hunger + 30.0).min(100.0);
         self.happiness = (self.happiness + 5.0).min(100.0);
     }
 
     fn play(&mut self) {
-        if self.is_sleeping {
-            return;
-        }
+        self.is_sleeping = false;
         self.happiness = (self.happiness + 20.0).min(100.0);
         self.energy = (self.energy - 10.0).max(0.0);
         self.hunger = (self.hunger - 5.0).max(0.0);
@@ -380,24 +376,38 @@ async fn main() {
             save_state_to_js(&state);
         }
 
-        if cat_petted && !state.is_sleeping {
-            if rand::gen_range(0, 3) == 0 {
-                audio.play_meow();
-            } else {
-                audio.play_purr();
-            }
-            state.happiness = (state.happiness + 5.0).min(100.0);
-            for _ in 0..3 {
+        if cat_petted {
+            if state.is_sleeping {
+                state.is_sleeping = false;
                 particles.push(Particle {
                     x: w / 2.0,
-                    y: cat_y - 20.0,
-                    vx: rand::gen_range(-50.0, 50.0),
+                    y: cat_y - 40.0,
+                    vx: rand::gen_range(-20.0, 20.0),
                     vy: rand::gen_range(-50.0, -20.0),
                     life: 1.0,
                     max_life: 1.0,
-                    text: "<3".to_string(),
-                    color: PINK,
+                    text: "?!".to_string(),
+                    color: WHITE,
                 });
+            } else {
+                if rand::gen_range(0, 3) == 0 {
+                    audio.play_meow();
+                } else {
+                    audio.play_purr();
+                }
+                state.happiness = (state.happiness + 5.0).min(100.0);
+                for _ in 0..3 {
+                    particles.push(Particle {
+                        x: w / 2.0,
+                        y: cat_y - 20.0,
+                        vx: rand::gen_range(-50.0, 50.0),
+                        vy: rand::gen_range(-50.0, -20.0),
+                        life: 1.0,
+                        max_life: 1.0,
+                        text: "<3".to_string(),
+                        color: PINK,
+                    });
+                }
             }
         }
 
