@@ -33,6 +33,10 @@ struct State {
     current_activity: Activity,
     #[serde(default)]
     activity_timer: f32,
+    #[serde(default)]
+    poop_count: u32,
+    #[serde(default)]
+    poop_timer: f32,
 }
 
 fn default_name() -> String {
@@ -66,6 +70,8 @@ impl Default for State {
             last_updated: get_now_ms(),
             current_activity: Activity::Idle,
             activity_timer: 0.0,
+            poop_count: 0,
+            poop_timer: 30.0,
         }
     }
 }
@@ -80,8 +86,17 @@ impl State {
                 self.is_sleeping = false;
             }
         } else {
+            if self.poop_timer > 0.0 {
+                self.poop_timer -= dt;
+            } else {
+                self.poop_count += 1;
+                self.poop_timer = 120.0; // Every 120 real/simulated seconds
+            }
+
+            let poop_penalty = self.poop_count as f32 * 0.5 * dt;
+
             self.hunger = (self.hunger - 0.5 * dt).max(0.0);
-            self.happiness = (self.happiness - 0.2 * dt).max(0.0);
+            self.happiness = (self.happiness - 0.2 * dt - poop_penalty).max(0.0);
             self.sleepiness = (self.sleepiness + 0.4 * dt).min(100.0);
             self.energy = (self.energy - 0.3 * dt).max(0.0);
             
@@ -104,12 +119,17 @@ impl State {
 
     fn feed(&mut self) {
         self.is_sleeping = false;
+        self.current_activity = Activity::Idle;
+        self.activity_timer = 0.0;
         self.hunger = (self.hunger + 30.0).min(100.0);
         self.happiness = (self.happiness + 5.0).min(100.0);
+        self.poop_timer = (self.poop_timer - 30.0).max(10.0); // Feeding makes it need to poop sooner
     }
 
     fn play(&mut self) {
         self.is_sleeping = false;
+        self.current_activity = Activity::Idle;
+        self.activity_timer = 0.0;
         self.happiness = (self.happiness + 20.0).min(100.0);
         self.energy = (self.energy - 10.0).max(0.0);
         self.hunger = (self.hunger - 5.0).max(0.0);
@@ -117,6 +137,8 @@ impl State {
 
     fn sleep(&mut self) {
         self.is_sleeping = true;
+        self.current_activity = Activity::Idle;
+        self.activity_timer = 0.0;
     }
 }
 
@@ -470,6 +492,47 @@ async fn main() {
         // Draw Cat
         draw_text(ears, cat_x, cat_y - 60.0, 80.0, ORANGE);
         draw_text(cat_face, cat_x, cat_y, 80.0, ORANGE);
+
+        // Draw Poops
+        let mut poop_cleaned = false;
+        let mut mx = 0.0;
+        let mut my = 0.0;
+        if is_mouse_button_pressed(MouseButton::Left) {
+            let (x, y) = mouse_position();
+            mx = x;
+            my = y;
+        }
+
+        for i in 0..state.poop_count {
+            let px = w / 2.0 - 100.0 + ((i * 53) % 200) as f32;
+            let py = cat_y + 40.0 + ((i * 29) % 50) as f32;
+            
+            let poop_size = measure_text("💩", None, 40, 1.0);
+            draw_text("💩", px, py, 40.0, WHITE);
+            
+            if mx >= px && mx <= px + poop_size.width && my >= py - 40.0 && my <= py {
+                poop_cleaned = true;
+            }
+        }
+        
+        if poop_cleaned && state.poop_count > 0 {
+            state.poop_count -= 1;
+            state.happiness = (state.happiness + 2.0).min(100.0);
+            audio.play_click();
+            for _ in 0..3 {
+                particles.push(Particle {
+                    x: mx,
+                    y: my,
+                    vx: macroquad::rand::gen_range(-20.0, 20.0),
+                    vy: macroquad::rand::gen_range(-50.0, -20.0),
+                    life: 1.0,
+                    max_life: 1.0,
+                    text: "✨".to_string(),
+                    color: WHITE,
+                });
+            }
+            save_state_to_js(&state);
+        }
 
         // Draw Name Input Box
         let input_rect_x = w / 2.0 - 100.0;
