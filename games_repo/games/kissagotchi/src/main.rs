@@ -11,6 +11,14 @@ extern "C" {
     fn js_get_now_ms() -> f64;
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
+enum Activity {
+    #[default]
+    Idle,
+    Cleaning,
+    Stretching,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct State {
     hunger: f32,
@@ -21,6 +29,10 @@ struct State {
     #[serde(default = "default_name")]
     name: String,
     last_updated: f64,
+    #[serde(default)]
+    current_activity: Activity,
+    #[serde(default)]
+    activity_timer: f32,
 }
 
 fn default_name() -> String {
@@ -52,12 +64,14 @@ impl Default for State {
             is_sleeping: false,
             name: default_name(),
             last_updated: get_now_ms(),
+            current_activity: Activity::Idle,
+            activity_timer: 0.0,
         }
     }
 }
 
 impl State {
-    fn update(&mut self, dt: f32) {
+    fn update(&mut self, dt: f32, is_realtime: bool) {
         if self.is_sleeping {
             self.energy += 2.0 * dt;
             self.sleepiness = (self.sleepiness - 1.0 * dt).max(0.0);
@@ -70,6 +84,21 @@ impl State {
             self.happiness = (self.happiness - 0.2 * dt).max(0.0);
             self.sleepiness = (self.sleepiness + 0.4 * dt).min(100.0);
             self.energy = (self.energy - 0.3 * dt).max(0.0);
+            
+            if self.activity_timer > 0.0 {
+                self.activity_timer -= dt;
+                if self.activity_timer <= 0.0 {
+                    self.current_activity = Activity::Idle;
+                }
+            } else if is_realtime && macroquad::rand::gen_range(0.0, 1000.0) < dt * 5.0 {
+                if macroquad::rand::gen_range(0, 2) == 0 {
+                    self.current_activity = Activity::Cleaning;
+                    self.activity_timer = 4.0;
+                } else {
+                    self.current_activity = Activity::Stretching;
+                    self.activity_timer = 2.0;
+                }
+            }
         }
     }
 
@@ -162,7 +191,7 @@ async fn main() {
         let steps = (diff_sec * 10.0) as usize; // Step 10 times a sec
         let dt = diff_sec / (steps.max(1) as f32);
         for _ in 0..steps {
-            state.update(dt);
+            state.update(dt, false);
         }
     }
     state.last_updated = now;
@@ -174,7 +203,7 @@ async fn main() {
 
     loop {
         let dt = get_frame_time();
-        state.update(dt);
+        state.update(dt, true);
 
         let now = get_now_ms();
         state.last_updated = now;
@@ -226,16 +255,34 @@ async fn main() {
             ),
         ];
 
-        let cat_face = if state.is_sleeping {
-            "^(-_-)^"
-        } else if state.sleepiness >= 90.0 || state.hunger <= 10.0 {
-            "^(T_T)^"
-        } else if state.happiness >= 80.0 {
-            "^(^_^)^"
+        let ears = if state.is_sleeping {
+            "       "
+        } else if state.current_activity == Activity::Stretching {
+            " \\_  _/"
         } else {
-            "^(o_o)^"
+            " /\\_/\\ "
         };
-        let size = measure_text(cat_face, None, 80, 1.0);
+
+        let cat_face = if state.is_sleeping {
+            " ( -.-)zZ"
+        } else if state.current_activity == Activity::Stretching {
+            " (~_~) "
+        } else if state.current_activity == Activity::Cleaning {
+            if (get_time() * 6.0).sin() > 0.0 {
+                " ( o.o)d"
+            } else {
+                " ( o.o) "
+            }
+        } else if state.sleepiness >= 90.0 || state.hunger <= 10.0 {
+            " ( T_T) "
+        } else if state.happiness >= 80.0 {
+            " ( ^_^) "
+        } else {
+            " ( o_o) "
+        };
+
+        let face_size = measure_text(cat_face, None, 80, 1.0);
+
         let anim_offset = if state.is_sleeping {
             (get_time() * 2.0).sin() as f32 * 5.0
         } else if state.happiness >= 80.0 {
@@ -243,7 +290,7 @@ async fn main() {
         } else {
             (get_time() * 3.0).sin() as f32 * 3.0
         };
-        let cat_x = w / 2.0 - size.width / 2.0;
+        let cat_x = w / 2.0 - face_size.width / 2.0;
         let cat_y = h / 2.0 + anim_offset;
 
         let mut cat_petted = false;
@@ -257,7 +304,7 @@ async fn main() {
             }
             if clicked_btn.is_none()
                 && mx >= cat_x
-                && mx <= cat_x + size.width
+                && mx <= cat_x + face_size.width
                 && my >= cat_y - 60.0
                 && my <= cat_y + 20.0
             {
@@ -276,7 +323,7 @@ async fn main() {
                 }
                 if clicked_btn.is_none()
                     && mx >= cat_x
-                    && mx <= cat_x + size.width
+                    && mx <= cat_x + face_size.width
                     && my >= cat_y - 60.0
                     && my <= cat_y + 20.0
                 {
@@ -334,7 +381,11 @@ async fn main() {
         }
 
         if cat_petted && !state.is_sleeping {
-            audio.play_meow();
+            if rand::gen_range(0, 3) == 0 {
+                audio.play_meow();
+            } else {
+                audio.play_purr();
+            }
             state.happiness = (state.happiness + 5.0).min(100.0);
             for _ in 0..3 {
                 particles.push(Particle {
@@ -407,6 +458,7 @@ async fn main() {
         }
 
         // Draw Cat
+        draw_text(ears, cat_x, cat_y - 60.0, 80.0, ORANGE);
         draw_text(cat_face, cat_x, cat_y, 80.0, ORANGE);
 
         // Draw Name Input Box
@@ -476,7 +528,7 @@ mod tests {
     #[test]
     fn test_update_decay() {
         let mut state = State::default();
-        state.update(10.0); // 10 seconds
+        state.update(10.0, true); // 10 seconds
         assert_eq!(state.hunger, 45.0);
         assert_eq!(state.happiness, 48.0);
         assert_eq!(state.sleepiness, 4.0);
@@ -488,11 +540,11 @@ mod tests {
         let mut state = State::default();
         state.energy = 50.0;
         state.sleep();
-        state.update(10.0);
+        state.update(10.0, true);
         assert_eq!(state.energy, 70.0);
         assert!(state.is_sleeping);
 
-        state.update(20.0);
+        state.update(20.0, true);
         assert_eq!(state.energy, 100.0);
         assert!(!state.is_sleeping); // Wakes up automatically
     }

@@ -3,6 +3,7 @@ use macroquad::audio::{load_sound_from_bytes, play_sound, PlaySoundParams, Sound
 pub struct AudioManager {
     pub click: Sound,
     pub meow: Sound,
+    pub purr: Sound,
 }
 
 impl AudioManager {
@@ -10,6 +11,7 @@ impl AudioManager {
         Self {
             click: load_sound_from_bytes(&generate_click_wav()).await.unwrap(),
             meow: load_sound_from_bytes(&generate_meow_wav()).await.unwrap(),
+            purr: load_sound_from_bytes(&generate_purr_wav()).await.unwrap(),
         }
     }
 
@@ -29,6 +31,16 @@ impl AudioManager {
             PlaySoundParams {
                 looped: false,
                 volume: 0.4,
+            },
+        );
+    }
+
+    pub fn play_purr(&self) {
+        play_sound(
+            &self.purr,
+            PlaySoundParams {
+                looped: false,
+                volume: 0.5,
             },
         );
     }
@@ -97,3 +109,37 @@ fn generate_meow_wav() -> Vec<u8> {
     }
     wav
 }
+
+fn generate_purr_wav() -> Vec<u8> {
+    let sample_rate = 44100;
+    let duration = 1.5;
+    let num_samples = (sample_rate as f32 * duration) as usize;
+    let mut samples = Vec::with_capacity(num_samples);
+    
+    for i in 0..num_samples {
+        let t = i as f32 / sample_rate as f32;
+        // Purr base frequency is low (25Hz to 50Hz)
+        let freq = 35.0;
+        let carrier = (t * freq * 2.0 * std::f32::consts::PI).sin();
+        // Add some noise for the rumbling texture
+        let noise = (t * 1000.0).sin() * 0.2 + (t * 2000.0).sin() * 0.1;
+        // Modulate with a slow breathing cycle
+        let envelope = (t * 2.0 * std::f32::consts::PI).sin().abs() * 0.8 + 0.2;
+        // Fade in/out
+        let fade = if t < 0.1 {
+            t / 0.1
+        } else if t > duration - 0.1 {
+            (duration - t) / 0.1
+        } else {
+            1.0
+        };
+        let sample = (carrier + noise) * envelope * fade * 0.5;
+        samples.push((sample * 16383.0) as i16);
+    }
+    let mut wav = create_wav_header((num_samples * 2) as u32, sample_rate);
+    for s in samples {
+        wav.extend_from_slice(&s.to_le_bytes());
+    }
+    wav
+}
+
