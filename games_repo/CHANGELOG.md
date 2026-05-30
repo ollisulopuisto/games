@@ -2,8 +2,13 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
-## [26.5.30.268] - 2026-05-29
+## [26.5.30.271] - 2026-05-30
 ### Added
+- **Kissagotchi**: Added Day/Night cycle background color changes.
+- **Kissagotchi**: Added Age and Weight mechanics that visually alter the cat's face (kitten, adult, fat).
+- **Kissagotchi**: Converted the basic "Play" button into an interactive "Catch the laser" minigame with touch support.
+- **Kissagotchi**: Added Poop mechanics with click/touch to clean interactions and happiness penalties.
+- **Kissagotchi**: Added a Shop button to buy treats for money earned from playing.
 - **Kissagotchi**: Added sound effects (click and meow) using procedurally generated wav files and `macroquad::audio`.
 - **Kissagotchi**: Added direct manipulation of the cat (touch screen friendly petting) to increase happiness.
 - **Kissagotchi**: Added iOS browser audio initialization fix (resumes AudioContext on first interaction).
