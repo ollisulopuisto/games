@@ -11,17 +11,12 @@ extern "C" {
     fn js_get_now_ms() -> f64;
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 enum Activity {
+    #[default]
     Idle,
     Cleaning,
     Stretching,
-}
-
-impl Default for Activity {
-    fn default() -> Self {
-        Activity::Idle
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -76,7 +71,7 @@ impl Default for State {
 }
 
 impl State {
-    fn update(&mut self, dt: f32) {
+    fn update(&mut self, dt: f32, is_realtime: bool) {
         if self.is_sleeping {
             self.energy += 2.0 * dt;
             self.sleepiness = (self.sleepiness - 1.0 * dt).max(0.0);
@@ -95,15 +90,13 @@ impl State {
                 if self.activity_timer <= 0.0 {
                     self.current_activity = Activity::Idle;
                 }
-            } else {
-                if macroquad::rand::gen_range(0.0, 1000.0) < dt * 5.0 {
-                    if macroquad::rand::gen_range(0, 2) == 0 {
-                        self.current_activity = Activity::Cleaning;
-                        self.activity_timer = 4.0;
-                    } else {
-                        self.current_activity = Activity::Stretching;
-                        self.activity_timer = 2.0;
-                    }
+            } else if is_realtime && macroquad::rand::gen_range(0.0, 1000.0) < dt * 5.0 {
+                if macroquad::rand::gen_range(0, 2) == 0 {
+                    self.current_activity = Activity::Cleaning;
+                    self.activity_timer = 4.0;
+                } else {
+                    self.current_activity = Activity::Stretching;
+                    self.activity_timer = 2.0;
                 }
             }
         }
@@ -198,7 +191,7 @@ async fn main() {
         let steps = (diff_sec * 10.0) as usize; // Step 10 times a sec
         let dt = diff_sec / (steps.max(1) as f32);
         for _ in 0..steps {
-            state.update(dt);
+            state.update(dt, false);
         }
     }
     state.last_updated = now;
@@ -210,7 +203,7 @@ async fn main() {
 
     loop {
         let dt = get_frame_time();
-        state.update(dt);
+        state.update(dt, true);
 
         let now = get_now_ms();
         state.last_updated = now;
@@ -289,7 +282,6 @@ async fn main() {
         };
 
         let face_size = measure_text(cat_face, None, 80, 1.0);
-        let ears_size = measure_text(ears, None, 80, 1.0);
 
         let anim_offset = if state.is_sleeping {
             (get_time() * 2.0).sin() as f32 * 5.0
@@ -466,7 +458,7 @@ async fn main() {
         }
 
         // Draw Cat
-        draw_text(ears, w / 2.0 - ears_size.width / 2.0, cat_y - 60.0, 80.0, ORANGE);
+        draw_text(ears, cat_x, cat_y - 60.0, 80.0, ORANGE);
         draw_text(cat_face, cat_x, cat_y, 80.0, ORANGE);
 
         // Draw Name Input Box
@@ -536,7 +528,7 @@ mod tests {
     #[test]
     fn test_update_decay() {
         let mut state = State::default();
-        state.update(10.0); // 10 seconds
+        state.update(10.0, true); // 10 seconds
         assert_eq!(state.hunger, 45.0);
         assert_eq!(state.happiness, 48.0);
         assert_eq!(state.sleepiness, 4.0);
@@ -548,11 +540,11 @@ mod tests {
         let mut state = State::default();
         state.energy = 50.0;
         state.sleep();
-        state.update(10.0);
+        state.update(10.0, true);
         assert_eq!(state.energy, 70.0);
         assert!(state.is_sleeping);
 
-        state.update(20.0);
+        state.update(20.0, true);
         assert_eq!(state.energy, 100.0);
         assert!(!state.is_sleeping); // Wakes up automatically
     }
