@@ -586,7 +586,7 @@ async fn main() {
             draw_circle(px + 15.0, py - 10.0, 10.0, brown);
             draw_circle(px + 15.0, py - 18.0, 6.0, brown);
             
-            if interacted && mx >= px && mx <= px + 30.0 && my >= py - 20.0 && my <= py + 15.0 {
+            if interacted && mx >= px && mx <= px + 30.0 && my >= py - 24.0 && my <= py + 15.0 {
                 poop_cleaned = true;
             }
         }
