@@ -63,6 +63,15 @@ async fn main() {
             last_save = now;
         }
 
+        let btn_scale = if w < 400.0 { w / 400.0 } else { 1.0 };
+        let btn_w = 80.0 * btn_scale;
+        let btn_h = 40.0 * btn_scale;
+        let gap = 10.0 * btn_scale;
+        let start_x = w / 2.0 - (btn_w * 2.0 + gap * 1.5);
+        let bottom_padding = 90.0; // Avoid iPhone safe area / bottom bar
+        let btn_y = h - btn_h - bottom_padding;
+        let input_rect_y = btn_y - 50.0;
+
         // Handle name input
         #[cfg(target_arch = "wasm32")]
         let is_mobile = shared::touch_input::is_mobile();
@@ -71,19 +80,12 @@ async fn main() {
 
         if !minigame.active {
             name_input.update_with_touch(
-                (w / 2.0 - 100.0, h - 110.0, 200.0, 40.0),
+                (w / 2.0 - 100.0, input_rect_y, 200.0, 40.0),
                 (0.0, 0.0, 0.0, 0.0),
                 is_mobile,
             );
             state.name = name_input.content.clone();
         }
-
-        let btn_scale = if w < 400.0 { w / 400.0 } else { 1.0 };
-        let btn_w = 80.0 * btn_scale;
-        let btn_h = 40.0 * btn_scale;
-        let gap = 10.0 * btn_scale;
-        let start_x = w / 2.0 - (btn_w * 2.0 + gap * 1.5);
-        let btn_y = h - 60.0 * btn_scale;
 
         let buttons = [
             ("Feed", start_x, btn_y, Color::new(0.3, 0.8, 0.3, 1.0)),
@@ -413,7 +415,7 @@ async fn main() {
 
         // Draw Name Input Box
         let input_rect_x = w / 2.0 - 100.0;
-        let input_rect_y = h - 110.0;
+        // input_rect_y is defined above
         let input_rect_w = 200.0;
         let input_rect_h = 40.0;
         draw_rectangle(
