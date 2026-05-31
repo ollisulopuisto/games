@@ -2,7 +2,7 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
-## [26.5.31.276] - 2026-05-31
+## [26.5.31.277] - 2026-05-31
 ### Changed
 - **Kissagotchi Gestures:** Replaced standard Feed and Sleep buttons with immersive touch mechanics: drag food from a bowl to feed, swipe to pet (triggers purring), and drag a night curtain down to sleep.
 

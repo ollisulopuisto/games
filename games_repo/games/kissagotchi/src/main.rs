@@ -63,10 +63,11 @@ async fn main() {
         };
         clear_background(bg_color);
 
+        let t = (10.0 * dt).min(1.0);
         if state.is_sleeping && !is_dragging_curtain {
-            curtain_y = curtain_y + (h - curtain_y) * 10.0 * dt;
+            curtain_y = curtain_y + (h - curtain_y) * t;
         } else if !state.is_sleeping && !is_dragging_curtain {
-            curtain_y = curtain_y + (0.0 - curtain_y) * 10.0 * dt;
+            curtain_y = curtain_y + (0.0 - curtain_y) * t;
         }
 
         let target_curtain_y = if state.is_sleeping { h } else { 0.0 };
@@ -126,7 +127,7 @@ async fn main() {
         ];
 
         let food_bowl_x = w - 60.0;
-        let food_bowl_y = h - 60.0;
+        let food_bowl_y = btn_y + btn_h / 2.0;
         let food_bowl_r = 40.0;
 
         let is_kitten = state.age < 600.0; // 10 minutes kitten
@@ -229,11 +230,14 @@ async fn main() {
             && my >= cat_y - 60.0
             && my <= cat_y + 20.0;
 
+        let active_touches = touches();
         let left_pressed = is_mouse_button_pressed(MouseButton::Left)
-            || touches().iter().any(|t| t.phase == TouchPhase::Started);
-        let left_down = is_mouse_button_down(MouseButton::Left) || !touches().is_empty();
+            || active_touches
+                .iter()
+                .any(|t| t.phase == TouchPhase::Started);
+        let left_down = is_mouse_button_down(MouseButton::Left) || !active_touches.is_empty();
         let left_released = is_mouse_button_released(MouseButton::Left)
-            || touches()
+            || active_touches
                 .iter()
                 .any(|t| t.phase == TouchPhase::Ended || t.phase == TouchPhase::Cancelled);
 
@@ -247,13 +251,18 @@ async fn main() {
                 }
             }
 
-            // Curtain dragging (swipe anywhere on screen to drag curtain)
+            // Curtain dragging (swipe near the curtain edge or top of screen to drag)
             if left_pressed && clicked_btn.is_none() && !is_touching_cat {
                 let dx = mx - food_bowl_x;
                 let dy = my - food_bowl_y;
+                let is_touching_input = mx >= w / 2.0 - 100.0
+                    && mx <= w / 2.0 + 100.0
+                    && my >= input_rect_y
+                    && my <= input_rect_y + 40.0;
+
                 if dx * dx + dy * dy <= food_bowl_r * food_bowl_r {
                     food_drag_pos = Some((mx, my));
-                } else {
+                } else if !is_touching_input && (my < 80.0 || (my - curtain_y).abs() < 40.0) {
                     is_dragging_curtain = true;
                     curtain_start_mouse_y = my;
                     curtain_start_y = curtain_y;
@@ -266,7 +275,11 @@ async fn main() {
                 } else if is_dragging_curtain {
                     let delta_y = my - curtain_start_mouse_y;
                     curtain_y = (curtain_start_y + delta_y).clamp(0.0, h);
-                } else if is_touching_cat && mouse_delta > 2.0 && clicked_btn.is_none() {
+                } else if is_touching_cat
+                    && !left_pressed
+                    && mouse_delta > 2.0
+                    && clicked_btn.is_none()
+                {
                     // Petting logic (swiping over cat)
                     if state.is_sleeping {
                         state.is_sleeping = false;
