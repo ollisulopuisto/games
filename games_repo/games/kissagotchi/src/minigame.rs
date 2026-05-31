@@ -47,6 +47,7 @@ impl Minigame {
         self.timer -= dt;
         if self.timer <= 0.0 {
             self.active = false;
+            return;
         }
 
         // Draw a semi-transparent dark overlay over the normal game
