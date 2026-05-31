@@ -279,7 +279,7 @@ async fn main() {
 
         if !in_minigame {
             name_input.update_with_touch(
-                (w / 2.0 - 100.0, 20.0, 200.0, 40.0),
+                (w / 2.0 - 100.0, h - 110.0, 200.0, 40.0),
                 (0.0, 0.0, 0.0, 0.0),
                 is_mobile,
             );
@@ -618,7 +618,7 @@ async fn main() {
 
         // Draw Name Input Box
         let input_rect_x = w / 2.0 - 100.0;
-        let input_rect_y = 20.0;
+        let input_rect_y = h - 110.0;
         let input_rect_w = 200.0;
         let input_rect_h = 40.0;
         draw_rectangle(input_rect_x, input_rect_y, input_rect_w, input_rect_h, Color::new(0.2, 0.2, 0.3, 1.0));
