@@ -35,6 +35,14 @@ async fn main() {
 
     let mut minigame = Minigame::default();
 
+    let mut food_drag_pos: Option<(f32, f32)> = None;
+    let mut curtain_y: f32 = 0.0;
+    let mut is_dragging_curtain = false;
+    let mut curtain_start_mouse_y = 0.0;
+    let mut curtain_start_y = 0.0;
+    let mut last_pet_sound_time = 0.0;
+    let mut last_mouse_pos = mouse_position();
+
     loop {
         let dt = get_frame_time();
         let w = screen_width();
@@ -55,6 +63,30 @@ async fn main() {
         };
         clear_background(bg_color);
 
+        if state.is_sleeping && !is_dragging_curtain {
+            curtain_y = curtain_y + (h - curtain_y) * 10.0 * dt;
+        } else if !state.is_sleeping && !is_dragging_curtain {
+            curtain_y = curtain_y + (0.0 - curtain_y) * 10.0 * dt;
+        }
+
+        let target_curtain_y = if state.is_sleeping { h } else { 0.0 };
+        if (curtain_y - target_curtain_y).abs() < 1.0 {
+            curtain_y = target_curtain_y;
+        }
+
+        if curtain_y > 0.0 {
+            draw_rectangle(0.0, 0.0, w, curtain_y, Color::new(0.02, 0.02, 0.08, 0.8));
+            // Draw curtain string/edge
+            draw_line(
+                0.0,
+                curtain_y,
+                w,
+                curtain_y,
+                4.0,
+                Color::new(0.4, 0.4, 0.5, 1.0),
+            );
+        }
+
         state.update(dt, true);
 
         // Save every 2 seconds
@@ -67,7 +99,6 @@ async fn main() {
         let btn_w = 80.0 * btn_scale;
         let btn_h = 40.0 * btn_scale;
         let gap = 10.0 * btn_scale;
-        let start_x = w / 2.0 - (btn_w * 2.0 + gap * 1.5);
         let bottom_padding = 90.0; // Avoid iPhone safe area / bottom bar
         let btn_y = h - btn_h - bottom_padding;
         let input_rect_y = btn_y - 50.0;
@@ -87,27 +118,16 @@ async fn main() {
             state.name = name_input.content.clone();
         }
 
+        let play_x = w / 2.0 - btn_w - gap / 2.0;
+        let shop_x = w / 2.0 + gap / 2.0;
         let buttons = [
-            ("Feed", start_x, btn_y, Color::new(0.3, 0.8, 0.3, 1.0)),
-            (
-                "Play",
-                start_x + btn_w + gap,
-                btn_y,
-                Color::new(0.3, 0.5, 0.9, 1.0),
-            ),
-            (
-                "Sleep",
-                start_x + (btn_w + gap) * 2.0,
-                btn_y,
-                Color::new(0.6, 0.3, 0.8, 1.0),
-            ),
-            (
-                "Shop",
-                start_x + (btn_w + gap) * 3.0,
-                btn_y,
-                Color::new(0.8, 0.6, 0.2, 1.0),
-            ),
+            ("Play", play_x, btn_y, Color::new(0.3, 0.5, 0.9, 1.0)),
+            ("Shop", shop_x, btn_y, Color::new(0.8, 0.6, 0.2, 1.0)),
         ];
+
+        let food_bowl_x = w - 60.0;
+        let food_bowl_y = h - 60.0;
+        let food_bowl_r = 40.0;
 
         let is_kitten = state.age < 600.0; // 10 minutes kitten
         let is_fat = state.weight > 8.0;
@@ -200,85 +220,154 @@ async fn main() {
         let cat_x = w / 2.0 - face_size.width / 2.0;
         let cat_y = h / 2.0 + anim_offset;
 
-        let mut cat_petted = false;
         let mut clicked_btn = None;
+        let (mx, my) = mouse_position();
+        let mouse_delta =
+            ((mx - last_mouse_pos.0).powi(2) + (my - last_mouse_pos.1).powi(2)).sqrt();
+        let is_touching_cat = mx >= cat_x
+            && mx <= cat_x + face_size.width
+            && my >= cat_y - 60.0
+            && my <= cat_y + 20.0;
+
+        let left_pressed = is_mouse_button_pressed(MouseButton::Left)
+            || touches().iter().any(|t| t.phase == TouchPhase::Started);
+        let left_down = is_mouse_button_down(MouseButton::Left) || !touches().is_empty();
+        let left_released = is_mouse_button_released(MouseButton::Left)
+            || touches()
+                .iter()
+                .any(|t| t.phase == TouchPhase::Ended || t.phase == TouchPhase::Cancelled);
 
         if !minigame.active {
-            if is_mouse_button_pressed(MouseButton::Left) {
-                let (mx, my) = mouse_position();
+            // Check button clicks
+            if left_pressed && food_drag_pos.is_none() && !is_dragging_curtain {
                 for (i, &(_, bx, by, _)) in buttons.iter().enumerate() {
                     if mx >= bx && mx <= bx + btn_w && my >= by && my <= by + btn_h {
                         clicked_btn = Some(i);
                     }
                 }
-                if clicked_btn.is_none()
-                    && mx >= cat_x
-                    && mx <= cat_x + face_size.width
-                    && my >= cat_y - 60.0
-                    && my <= cat_y + 20.0
-                {
-                    cat_petted = true;
+            }
+
+            // Curtain dragging (swipe anywhere on screen to drag curtain)
+            if left_pressed && clicked_btn.is_none() && !is_touching_cat {
+                let dx = mx - food_bowl_x;
+                let dy = my - food_bowl_y;
+                if dx * dx + dy * dy <= food_bowl_r * food_bowl_r {
+                    food_drag_pos = Some((mx, my));
+                } else {
+                    is_dragging_curtain = true;
+                    curtain_start_mouse_y = my;
+                    curtain_start_y = curtain_y;
                 }
             }
 
-            for touch in touches() {
-                if touch.phase == TouchPhase::Started {
-                    let mx = touch.position.x;
-                    let my = touch.position.y;
-                    for (i, &(_, bx, by, _)) in buttons.iter().enumerate() {
-                        if mx >= bx && mx <= bx + btn_w && my >= by && my <= by + btn_h {
-                            clicked_btn = Some(i);
+            if left_down {
+                if let Some(_) = food_drag_pos {
+                    food_drag_pos = Some((mx, my));
+                } else if is_dragging_curtain {
+                    let delta_y = my - curtain_start_mouse_y;
+                    curtain_y = (curtain_start_y + delta_y).clamp(0.0, h);
+                } else if is_touching_cat && mouse_delta > 2.0 && clicked_btn.is_none() {
+                    // Petting logic (swiping over cat)
+                    if state.is_sleeping {
+                        state.is_sleeping = false;
+                        particles.push(Particle {
+                            x: w / 2.0,
+                            y: cat_y - 40.0,
+                            vx: rand::gen_range(-20.0, 20.0),
+                            vy: rand::gen_range(-50.0, -20.0),
+                            life: 1.0,
+                            max_life: 1.0,
+                            text: "?!".to_string(),
+                            color: WHITE,
+                        });
+                    } else {
+                        state.happiness = (state.happiness + 0.1).min(100.0);
+                        if now - last_pet_sound_time > 1000.0 {
+                            if rand::gen_range(0, 3) == 0 {
+                                audio.play_meow();
+                            } else {
+                                audio.play_purr();
+                            }
+                            last_pet_sound_time = now;
+                        }
+                        if rand::gen_range(0, 10) == 0 {
+                            particles.push(Particle {
+                                x: mx,
+                                y: my - 20.0,
+                                vx: rand::gen_range(-20.0, 20.0),
+                                vy: rand::gen_range(-50.0, -20.0),
+                                life: 0.5,
+                                max_life: 0.5,
+                                text: "<3".to_string(),
+                                color: PINK,
+                            });
                         }
                     }
-                    if clicked_btn.is_none()
-                        && mx >= cat_x
-                        && mx <= cat_x + face_size.width
-                        && my >= cat_y - 60.0
-                        && my <= cat_y + 20.0
-                    {
-                        cat_petted = true;
+                }
+            }
+
+            if left_released {
+                if let Some((fx, fy)) = food_drag_pos {
+                    // Check if dropped near cat's mouth (center of cat)
+                    let dx = fx - (w / 2.0);
+                    let dy = fy - cat_y;
+                    if dx * dx + dy * dy < 100.0 * 100.0 {
+                        state.feed();
+                        audio.play_click();
+                        for _ in 0..5 {
+                            particles.push(Particle {
+                                x: fx,
+                                y: fy,
+                                vx: rand::gen_range(-100.0, 100.0),
+                                vy: rand::gen_range(-150.0, -50.0),
+                                life: 1.0,
+                                max_life: 1.0,
+                                text: "YUM".to_string(),
+                                color: GREEN,
+                            });
+                        }
+                        save_state_to_js(&state);
+                    }
+                    food_drag_pos = None;
+                }
+                if is_dragging_curtain {
+                    is_dragging_curtain = false;
+                    if curtain_y > h / 2.0 {
+                        if !state.is_sleeping {
+                            state.sleep();
+                            audio.play_click();
+                            for _ in 0..3 {
+                                particles.push(Particle {
+                                    x: w / 2.0 + rand::gen_range(-30.0, 30.0),
+                                    y: h / 2.0 - 50.0 + rand::gen_range(-30.0, 30.0),
+                                    vx: rand::gen_range(20.0, 80.0),
+                                    vy: rand::gen_range(-100.0, -30.0),
+                                    life: 2.0,
+                                    max_life: 2.0,
+                                    text: "Zzz".to_string(),
+                                    color: BLUE,
+                                });
+                            }
+                            save_state_to_js(&state);
+                        }
+                    } else {
+                        state.is_sleeping = false;
+                        save_state_to_js(&state);
                     }
                 }
             }
         }
+        last_mouse_pos = (mx, my);
 
         if let Some(idx) = clicked_btn {
             audio.play_click();
             if idx == 0 {
-                state.feed();
-                for _ in 0..5 {
-                    particles.push(Particle {
-                        x: w / 2.0 + macroquad::rand::gen_range(-50.0, 50.0),
-                        y: h / 2.0 + macroquad::rand::gen_range(-50.0, 50.0),
-                        vx: macroquad::rand::gen_range(-100.0, 100.0),
-                        vy: macroquad::rand::gen_range(-150.0, -50.0),
-                        life: 1.0,
-                        max_life: 1.0,
-                        text: "YUM".to_string(),
-                        color: GREEN,
-                    });
-                }
-            } else if idx == 1 {
                 // Enter Minigame
                 minigame.start();
                 state.is_sleeping = false;
                 state.current_activity = Activity::Idle;
                 state.activity_timer = 0.0;
-            } else if idx == 2 {
-                state.sleep();
-                for _ in 0..3 {
-                    particles.push(Particle {
-                        x: w / 2.0 + macroquad::rand::gen_range(-30.0, 30.0),
-                        y: h / 2.0 - 50.0 + macroquad::rand::gen_range(-30.0, 30.0),
-                        vx: macroquad::rand::gen_range(20.0, 80.0),
-                        vy: macroquad::rand::gen_range(-100.0, -30.0),
-                        life: 2.0,
-                        max_life: 2.0,
-                        text: "Zzz".to_string(),
-                        color: BLUE,
-                    });
-                }
-            } else if idx == 3 {
+            } else if idx == 1 {
                 // Shop: Buy treat for 5 money
                 if state.money >= 5 {
                     state.money -= 5;
@@ -300,41 +389,6 @@ async fn main() {
                 }
             }
             save_state_to_js(&state);
-        }
-
-        if cat_petted {
-            if state.is_sleeping {
-                state.is_sleeping = false;
-                particles.push(Particle {
-                    x: w / 2.0,
-                    y: cat_y - 40.0,
-                    vx: rand::gen_range(-20.0, 20.0),
-                    vy: rand::gen_range(-50.0, -20.0),
-                    life: 1.0,
-                    max_life: 1.0,
-                    text: "?!".to_string(),
-                    color: WHITE,
-                });
-            } else {
-                if rand::gen_range(0, 3) == 0 {
-                    audio.play_meow();
-                } else {
-                    audio.play_purr();
-                }
-                state.happiness = (state.happiness + 5.0).min(100.0);
-                for _ in 0..3 {
-                    particles.push(Particle {
-                        x: w / 2.0,
-                        y: cat_y - 20.0,
-                        vx: rand::gen_range(-50.0, 50.0),
-                        vy: rand::gen_range(-50.0, -20.0),
-                        life: 1.0,
-                        max_life: 1.0,
-                        text: "<3".to_string(),
-                        color: PINK,
-                    });
-                }
-            }
         }
 
         // Draw Buttons
@@ -448,6 +502,34 @@ async fn main() {
             24.0,
             WHITE,
         );
+
+        // Draw Food Bowl
+        draw_circle(
+            food_bowl_x,
+            food_bowl_y,
+            food_bowl_r,
+            Color::new(0.6, 0.3, 0.1, 1.0),
+        );
+        draw_circle(
+            food_bowl_x,
+            food_bowl_y - 5.0,
+            food_bowl_r - 5.0,
+            Color::new(0.4, 0.2, 0.1, 1.0),
+        );
+        draw_text("Food", food_bowl_x - 20.0, food_bowl_y + 5.0, 20.0, WHITE);
+
+        if let Some((fx, fy)) = food_drag_pos {
+            // Draw dragging food
+            draw_circle(fx, fy, 15.0, ORANGE);
+            draw_text("🐟", fx - 10.0, fy + 5.0, 20.0, WHITE);
+
+            // Draw cat looking at food
+            if !state.is_sleeping {
+                let dx = fx - w / 2.0;
+                let look_offset = (dx / w) * 20.0;
+                draw_circle(w / 2.0 + look_offset, cat_y - 40.0, 5.0, RED); // Red dot for eyes following
+            }
+        }
 
         minigame.update_and_draw(dt, w, h, &mut state, &audio, &mut particles);
 

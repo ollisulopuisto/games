@@ -283,7 +283,7 @@ mod tests {
         state.energy = 50.0;
         state.sleepiness = 50.0;
         state.sleep();
-        
+
         state.update(10.0, true);
         assert_eq!(state.energy, 70.0); // 50 + 2.0 * 10
         assert_eq!(state.sleepiness, 40.0); // 50 - 1.0 * 10
@@ -300,10 +300,10 @@ mod tests {
         let mut state = State::default();
         state.poop_timer = 0.0; // Ready to poop immediately
         state.update(0.1, true); // This update triggers the poop because poop_timer <= 0
-        
+
         assert_eq!(state.poop_count, 1);
         assert_eq!(state.poop_timer, 120.0);
-        
+
         // Let's test penalty
         let happiness_before = state.happiness;
         state.update(10.0, true);

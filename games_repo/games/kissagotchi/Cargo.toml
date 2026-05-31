@@ -1,6 +1,6 @@
 [package]
 name = "kissagotchi_wasm"
-version = "26.5.29"
+version = "26.5.31"
 edition = "2021"
 
 [dependencies]
