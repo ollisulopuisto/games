@@ -1,6 +1,6 @@
 [package]
 name = "gravitris_wasm"
-version = "26.5.30"
+version = "26.5.31"
 edition = "2021"
 
 [dependencies]

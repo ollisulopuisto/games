@@ -46,7 +46,7 @@ struct State {
 }
 
 fn default_weight() -> f32 {
-    50.0
+    5.0
 }
 
 fn default_name() -> String {
@@ -113,7 +113,7 @@ impl State {
             self.sleepiness = (self.sleepiness + 0.4 * dt).min(100.0);
             self.energy = (self.energy - 0.3 * dt).max(0.0);
             self.age += dt;
-            self.weight = (self.weight - 0.05 * dt).max(10.0);
+            self.weight = (self.weight - 0.005 * dt).max(1.0);
             
             if self.activity_timer > 0.0 {
                 self.activity_timer -= dt;
@@ -138,7 +138,7 @@ impl State {
         self.activity_timer = 0.0;
         self.hunger = (self.hunger + 30.0).min(100.0);
         self.happiness = (self.happiness + 5.0).min(100.0);
-        self.weight = (self.weight + 5.0).min(200.0);
+        self.weight = (self.weight + 0.5).min(20.0);
         self.poop_timer = (self.poop_timer - 30.0).max(10.0); // Feeding makes it need to poop sooner
     }
 
@@ -149,7 +149,7 @@ impl State {
         self.happiness = (self.happiness + 20.0).min(100.0);
         self.energy = (self.energy - 10.0).max(0.0);
         self.hunger = (self.hunger - 5.0).max(0.0);
-        self.weight = (self.weight - 2.0).max(10.0);
+        self.weight = (self.weight - 0.2).max(1.0);
         self.money += 1;
     }
 
@@ -250,86 +250,7 @@ async fn main() {
         let h = screen_height();
         let now = get_now_ms();
 
-        if in_minigame {
-            minigame_timer -= dt;
-            if minigame_timer <= 0.0 {
-                in_minigame = false;
-            }
 
-            clear_background(BLACK);
-            draw_text("Catch the laser!", 20.0, 40.0, 40.0, WHITE);
-            draw_text(&format!("Time left: {:.1}", minigame_timer), 20.0, 80.0, 40.0, WHITE);
-            
-            laser_x += laser_vx * dt;
-            laser_y += laser_vy * dt;
-            if laser_x < 0.0 || laser_x > w { laser_vx *= -1.0; laser_x = laser_x.clamp(0.0, w); }
-            if laser_y < 100.0 || laser_y > h { laser_vy *= -1.0; laser_y = laser_y.clamp(100.0, h); }
-            
-            draw_circle(laser_x, laser_y, 10.0, RED);
-
-            let mut mx = 0.0;
-            let mut my = 0.0;
-            let mut interacted = false;
-
-            if is_mouse_button_pressed(MouseButton::Left) {
-                let (x, y) = mouse_position();
-                mx = x;
-                my = y;
-                interacted = true;
-            }
-
-            for touch in touches() {
-                if touch.phase == TouchPhase::Started {
-                    mx = touch.position.x;
-                    my = touch.position.y;
-                    interacted = true;
-                }
-            }
-
-            if interacted {
-                let dist = ((mx - laser_x).powi(2) + (my - laser_y).powi(2)).sqrt();
-                if dist < 40.0 {
-                    state.play();
-                    audio.play_click();
-                    laser_vx = macroquad::rand::gen_range(-400.0, 400.0);
-                    laser_vy = macroquad::rand::gen_range(-400.0, 400.0);
-                    for _ in 0..5 {
-                        particles.push(Particle {
-                            x: laser_x,
-                            y: laser_y,
-                            vx: macroquad::rand::gen_range(-150.0, 150.0),
-                            vy: macroquad::rand::gen_range(-150.0, 150.0),
-                            life: 1.0,
-                            max_life: 1.0,
-                            text: "YAY".to_string(),
-                            color: YELLOW,
-                        });
-                    }
-                }
-            }
-
-            let back_x = w / 2.0 - 50.0;
-            let back_y = h - 60.0;
-            draw_rectangle(back_x, back_y, 100.0, 40.0, GRAY);
-            draw_text("Back", back_x + 10.0, back_y + 30.0, 30.0, WHITE);
-            if interacted && mx >= back_x && mx <= back_x + 100.0 && my >= back_y && my <= back_y + 40.0 {
-                in_minigame = false;
-            }
-
-            // Update and Draw Particles
-            for p in &mut particles {
-                p.update(dt);
-                let alpha = (p.life / p.max_life).clamp(0.0, 1.0);
-                let mut c = p.color;
-                c.a = alpha;
-                let p_size = measure_text(&p.text, None, 20, 1.0);
-                draw_text(&p.text, p.x - p_size.width / 2.0, p.y, 20.0, c);
-            }
-            particles.retain(|p| p.life > 0.0);
-
-            next_frame().await;
-            continue;
-        }
 
         // Faster day/night cycle: 10 minutes = 24 hours
         let cycle = (now / (1000.0 * 60.0 * 10.0)) % 1.0;
@@ -356,12 +277,14 @@ async fn main() {
         #[cfg(not(target_arch = "wasm32"))]
         let is_mobile = false;
 
-        name_input.update_with_touch(
-            (w / 2.0 - 100.0, 20.0, 200.0, 40.0),
-            (0.0, 0.0, 0.0, 0.0),
-            is_mobile,
-        );
-        state.name = name_input.content.clone();
+        if !in_minigame {
+            name_input.update_with_touch(
+                (w / 2.0 - 100.0, 20.0, 200.0, 40.0),
+                (0.0, 0.0, 0.0, 0.0),
+                is_mobile,
+            );
+            state.name = name_input.content.clone();
+        }
 
         let btn_w = 80.0;
         let btn_h = 40.0;
@@ -392,7 +315,7 @@ async fn main() {
         ];
 
         let is_kitten = state.age < 600.0; // 10 minutes kitten
-        let is_fat = state.weight > 80.0;
+        let is_fat = state.weight > 8.0;
 
         let ears = if state.is_sleeping {
             "       "
@@ -434,27 +357,10 @@ async fn main() {
 
         let mut cat_petted = false;
         let mut clicked_btn = None;
-        if is_mouse_button_pressed(MouseButton::Left) {
-            let (mx, my) = mouse_position();
-            for (i, &(_, bx, by, _)) in buttons.iter().enumerate() {
-                if mx >= bx && mx <= bx + btn_w && my >= by && my <= by + btn_h {
-                    clicked_btn = Some(i);
-                }
-            }
-            if clicked_btn.is_none()
-                && mx >= cat_x
-                && mx <= cat_x + face_size.width
-                && my >= cat_y - 60.0
-                && my <= cat_y + 20.0
-            {
-                cat_petted = true;
-            }
-        }
-
-        for touch in touches() {
-            if touch.phase == TouchPhase::Started {
-                let mx = touch.position.x;
-                let my = touch.position.y;
+        
+        if !in_minigame {
+            if is_mouse_button_pressed(MouseButton::Left) {
+                let (mx, my) = mouse_position();
                 for (i, &(_, bx, by, _)) in buttons.iter().enumerate() {
                     if mx >= bx && mx <= bx + btn_w && my >= by && my <= by + btn_h {
                         clicked_btn = Some(i);
@@ -467,6 +373,26 @@ async fn main() {
                     && my <= cat_y + 20.0
                 {
                     cat_petted = true;
+                }
+            }
+
+            for touch in touches() {
+                if touch.phase == TouchPhase::Started {
+                    let mx = touch.position.x;
+                    let my = touch.position.y;
+                    for (i, &(_, bx, by, _)) in buttons.iter().enumerate() {
+                        if mx >= bx && mx <= bx + btn_w && my >= by && my <= by + btn_h {
+                            clicked_btn = Some(i);
+                        }
+                    }
+                    if clicked_btn.is_none()
+                        && mx >= cat_x
+                        && mx <= cat_x + face_size.width
+                        && my >= cat_y - 60.0
+                        && my <= cat_y + 20.0
+                    {
+                        cat_petted = true;
+                    }
                 }
             }
         }
@@ -512,7 +438,7 @@ async fn main() {
                 // Shop: Buy treat for 5 money
                 if state.money >= 5 {
                     state.money -= 5;
-                    state.weight = (state.weight + 10.0).min(200.0);
+                    state.weight = (state.weight + 1.0).min(20.0);
                     state.happiness = (state.happiness + 30.0).min(100.0);
                     state.hunger = (state.hunger + 40.0).min(100.0);
                     for _ in 0..3 {
@@ -636,30 +562,33 @@ async fn main() {
         let mut my = 0.0;
         let mut interacted = false;
 
-        if is_mouse_button_pressed(MouseButton::Left) {
-            let (x, y) = mouse_position();
-            mx = x;
-            my = y;
-            interacted = true;
-        }
-
-        for touch in touches() {
-            if touch.phase == TouchPhase::Started {
-                mx = touch.position.x;
-                my = touch.position.y;
+        if !in_minigame {
+            if is_mouse_button_pressed(MouseButton::Left) {
+                let (x, y) = mouse_position();
+                mx = x;
+                my = y;
                 interacted = true;
             }
-        }
 
-        let poop_size = measure_text("💩", None, 40, 1.0);
+            for touch in touches() {
+                if touch.phase == TouchPhase::Started {
+                    mx = touch.position.x;
+                    my = touch.position.y;
+                    interacted = true;
+                }
+            }
+        }
 
         for i in 0..state.poop_count {
             let px = w / 2.0 - 100.0 + ((i * 53) % 200) as f32;
             let py = cat_y + 40.0 + ((i * 29) % 50) as f32;
             
-            draw_text("💩", px, py, 40.0, WHITE);
+            let brown = Color::new(0.4, 0.2, 0.0, 1.0);
+            draw_circle(px + 15.0, py, 15.0, brown);
+            draw_circle(px + 15.0, py - 10.0, 10.0, brown);
+            draw_circle(px + 15.0, py - 18.0, 6.0, brown);
             
-            if interacted && mx >= px && mx <= px + poop_size.width && my >= py - 40.0 && my <= py {
+            if interacted && mx >= px && mx <= px + 30.0 && my >= py - 24.0 && my <= py + 15.0 {
                 poop_cleaned = true;
             }
         }
@@ -701,6 +630,78 @@ async fn main() {
             24.0,
             WHITE,
         );
+
+        if in_minigame {
+            minigame_timer -= dt;
+            if minigame_timer <= 0.0 {
+                in_minigame = false;
+            }
+
+            // Draw a semi-transparent dark overlay over the normal game
+            draw_rectangle(0.0, 0.0, w, h, Color::new(0.0, 0.0, 0.0, 0.7));
+            draw_text("Catch the laser!", 20.0, 40.0, 40.0, WHITE);
+            draw_text(&format!("Time left: {:.1}", minigame_timer), 20.0, 80.0, 40.0, WHITE);
+            
+            laser_x += laser_vx * dt;
+            laser_y += laser_vy * dt;
+            if laser_x < 0.0 || laser_x > w { laser_vx *= -1.0; laser_x = laser_x.clamp(0.0, w); }
+            if laser_y < 100.0 || laser_y > h - 80.0 { laser_vy *= -1.0; laser_y = laser_y.clamp(100.0, h - 80.0); }
+            
+            draw_circle(laser_x, laser_y, 10.0, RED);
+
+            let mut mx = 0.0;
+            let mut my = 0.0;
+            let mut interacted = false;
+
+            if is_mouse_button_pressed(MouseButton::Left) {
+                let (x, y) = mouse_position();
+                mx = x;
+                my = y;
+                interacted = true;
+            }
+
+            for touch in touches() {
+                if touch.phase == TouchPhase::Started {
+                    mx = touch.position.x;
+                    my = touch.position.y;
+                    interacted = true;
+                }
+            }
+
+            let back_x = w / 2.0 - 50.0;
+            let back_y = h - 60.0;
+            let mut clicked_back = false;
+
+            if interacted && mx >= back_x && mx <= back_x + 100.0 && my >= back_y && my <= back_y + 40.0 {
+                clicked_back = true;
+                in_minigame = false;
+            }
+
+            if interacted && !clicked_back {
+                let dist = ((mx - laser_x).powi(2) + (my - laser_y).powi(2)).sqrt();
+                if dist < 40.0 {
+                    state.play();
+                    audio.play_click();
+                    laser_vx = macroquad::rand::gen_range(-400.0, 400.0);
+                    laser_vy = macroquad::rand::gen_range(-400.0, 400.0);
+                    for _ in 0..5 {
+                        particles.push(Particle {
+                            x: laser_x,
+                            y: laser_y,
+                            vx: macroquad::rand::gen_range(-150.0, 150.0),
+                            vy: macroquad::rand::gen_range(-150.0, 150.0),
+                            life: 1.0,
+                            max_life: 1.0,
+                            text: "YAY".to_string(),
+                            color: YELLOW,
+                        });
+                    }
+                }
+            }
+
+            draw_rectangle(back_x, back_y, 100.0, 40.0, GRAY);
+            draw_text("Back", back_x + 10.0, back_y + 30.0, 30.0, WHITE);
+        }
 
         // Update and Draw Particles
         for p in &mut particles {

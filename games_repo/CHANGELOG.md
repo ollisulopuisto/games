@@ -2,7 +2,7 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
-## [26.5.30.271] - 2026-05-30
+## [26.5.31.271] - 2026-05-30
 ### Added
 - **Kissagotchi**: Added Day/Night cycle background color changes.
 - **Kissagotchi**: Added Age and Weight mechanics that visually alter the cat's face (kitten, adult, fat).
