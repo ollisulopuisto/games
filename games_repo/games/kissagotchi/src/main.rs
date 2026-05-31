@@ -286,11 +286,12 @@ async fn main() {
             state.name = name_input.content.clone();
         }
 
-        let btn_w = 80.0;
-        let btn_h = 40.0;
-        let gap = 10.0;
+        let btn_scale = if w < 400.0 { w / 400.0 } else { 1.0 };
+        let btn_w = 80.0 * btn_scale;
+        let btn_h = 40.0 * btn_scale;
+        let gap = 10.0 * btn_scale;
         let start_x = w / 2.0 - (btn_w * 2.0 + gap * 1.5);
-        let btn_y = h - 60.0;
+        let btn_y = h - 60.0 * btn_scale;
 
         let buttons = [
             ("Feed", start_x, btn_y, Color::new(0.3, 0.8, 0.3, 1.0)),
@@ -496,12 +497,13 @@ async fn main() {
         // Draw Buttons
         for &(label, bx, by, color) in &buttons {
             draw_rectangle(bx, by, btn_w, btn_h, color);
-            let size = measure_text(label, None, 20, 1.0);
+            let font_size = (20.0 * btn_scale) as u16;
+            let size = measure_text(label, None, font_size, 1.0);
             draw_text(
                 label,
                 bx + btn_w / 2.0 - size.width / 2.0,
                 by + btn_h / 2.0 + size.height / 2.0,
-                20.0,
+                font_size as f32,
                 WHITE,
             );
         }
