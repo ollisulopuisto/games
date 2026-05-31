@@ -29,6 +29,12 @@ impl Minigame {
     pub fn start(&mut self) {
         self.active = true;
         self.timer = 15.0; // 15 seconds minigame
+        self.laser_x = 100.0;
+        self.laser_y = 100.0;
+        let angle = macroquad::rand::gen_range(0.0, 2.0 * std::f32::consts::PI);
+        let speed = macroquad::rand::gen_range(200.0, 400.0);
+        self.laser_vx = angle.cos() * speed;
+        self.laser_vy = angle.sin() * speed;
     }
 
     pub fn update_and_draw(
@@ -44,8 +50,9 @@ impl Minigame {
             return;
         }
 
-        self.timer = (self.timer - dt).max(0.0);
-        if self.timer == 0.0 {
+        self.timer -= dt;
+        if self.timer <= 0.0 {
+            self.timer = 0.0;
             self.active = false;
             return;
         }
@@ -95,21 +102,21 @@ impl Minigame {
 
         let back_x = w / 2.0 - 50.0;
         let back_y = h - 60.0;
-        let mut clicked_back = false;
-
         if interacted && mx >= back_x && mx <= back_x + 100.0 && my >= back_y && my <= back_y + 40.0
         {
-            clicked_back = true;
             self.active = false;
+            return;
         }
 
-        if interacted && !clicked_back {
+        if interacted {
             let dist = ((mx - self.laser_x).powi(2) + (my - self.laser_y).powi(2)).sqrt();
             if dist < 40.0 {
                 state.play();
                 audio.play_click();
-                self.laser_vx = macroquad::rand::gen_range(-400.0, 400.0);
-                self.laser_vy = macroquad::rand::gen_range(-400.0, 400.0);
+                let angle = macroquad::rand::gen_range(0.0, 2.0 * std::f32::consts::PI);
+                let speed = macroquad::rand::gen_range(200.0, 400.0);
+                self.laser_vx = angle.cos() * speed;
+                self.laser_vy = angle.sin() * speed;
                 for _ in 0..5 {
                     particles.push(Particle {
                         x: self.laser_x,

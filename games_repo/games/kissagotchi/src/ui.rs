@@ -1,7 +1,7 @@
 use crate::state::State;
 use macroquad::prelude::*;
 
-pub fn draw_stats(state: &State, w: f32) -> f32 {
+pub fn draw_stats(state: &State, w: f32) {
     let stats = [
         format!("Hunger: {:.0}%", state.hunger),
         format!("Happiness: {:.0}%", state.happiness),
@@ -43,6 +43,4 @@ pub fn draw_stats(state: &State, w: f32) -> f32 {
 
         text_y += y_step;
     }
-
-    scale
 }
