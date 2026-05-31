@@ -270,7 +270,7 @@ async fn main() {
             }
 
             if left_down {
-                if let Some(_) = food_drag_pos {
+                if food_drag_pos.is_some() {
                     food_drag_pos = Some((mx, my));
                 } else if is_dragging_curtain {
                     let delta_y = my - curtain_start_mouse_y;

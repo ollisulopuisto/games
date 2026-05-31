@@ -199,11 +199,9 @@ async fn main() {
                     }
                 } else {
                     // During clear animation, check if it just finished to spawn new piece
-                    if board.clear_anim_timer > 0.0 && board.clear_anim_timer - dt <= 0.0 {
-                        if !board.spawn_piece() {
-                            state = AppState::GameOver;
-                            audio.stop_music();
-                        }
+                    if board.clear_anim_timer > 0.0 && board.clear_anim_timer - dt <= 0.0 && !board.spawn_piece() {
+                        state = AppState::GameOver;
+                        audio.stop_music();
                     }
                 }
             }
@@ -391,11 +389,7 @@ async fn main() {
                 WHITE,
             );
 
-            let help_text2 = if input.touch_active {
-                "P: Pause  M: Mute"
-            } else {
-                "P: Pause  M: Mute"
-            };
+            let help_text2 = "P: Pause  M: Mute";
             let h_dims2 = measure_text(help_text2, None, h_size as u16, 1.0);
             draw_text(
                 help_text2,
