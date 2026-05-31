@@ -1,4 +1,4 @@
-VERSION=26.5.31.277
+VERSION=26.5.31.278
 
 
 .PHONY: build serve test lint

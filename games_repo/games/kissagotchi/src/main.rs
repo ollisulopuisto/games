@@ -42,6 +42,7 @@ async fn main() {
     let mut curtain_start_y = 0.0;
     let mut last_pet_sound_time = 0.0;
     let mut last_mouse_pos = mouse_position();
+    let mut show_instructions = true;
 
     loop {
         let dt = get_frame_time();
@@ -110,7 +111,7 @@ async fn main() {
         #[cfg(not(target_arch = "wasm32"))]
         let is_mobile = false;
 
-        if !minigame.active {
+        if !minigame.active && !show_instructions {
             name_input.update_with_touch(
                 (w / 2.0 - 100.0, input_rect_y, 200.0, 40.0),
                 (0.0, 0.0, 0.0, 0.0),
@@ -556,6 +557,42 @@ async fn main() {
             draw_text(&p.text, p.x - size.width / 2.0, p.y, 24.0, c);
         }
         particles.retain(|p| p.life > 0.0);
+
+        // Draw Instructions Popup
+        if show_instructions {
+            draw_rectangle(0.0, 0.0, w, h, Color::new(0.0, 0.0, 0.0, 0.7));
+            let popup_w = (w * 0.8).min(400.0);
+            let popup_h = 300.0;
+            let popup_x = w / 2.0 - popup_w / 2.0;
+            let popup_y = h / 2.0 - popup_h / 2.0;
+            
+            draw_rectangle(popup_x, popup_y, popup_w, popup_h, Color::new(0.1, 0.1, 0.2, 1.0));
+            draw_rectangle_lines(popup_x, popup_y, popup_w, popup_h, 2.0, WHITE);
+            
+            let title = "KISSAGOTCHI";
+            let t_size = measure_text(title, None, 30, 1.0);
+            draw_text(title, w / 2.0 - t_size.width / 2.0, popup_y + 40.0, 30.0, WHITE);
+            
+            let instructions = [
+                "1. Tap 'Name' box to rename.",
+                "2. Drag Food 🐟 to mouth to feed.",
+                "3. Swipe down from top to sleep.",
+                "4. Swipe over cat to pet.",
+                "5. Play minigames to earn money.",
+            ];
+            
+            for (i, line) in instructions.iter().enumerate() {
+                draw_text(line, popup_x + 20.0, popup_y + 90.0 + (i as f32 * 30.0), 18.0, WHITE);
+            }
+            
+            let close = "Tap anywhere to start";
+            let c_size = measure_text(close, None, 20, 1.0);
+            draw_text(close, w / 2.0 - c_size.width / 2.0, popup_y + popup_h - 20.0, 20.0, YELLOW);
+            
+            if left_released || active_touches.iter().any(|t| t.phase == TouchPhase::Ended) {
+                show_instructions = false;
+            }
+        }
 
         next_frame().await
     }

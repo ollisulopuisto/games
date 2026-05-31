@@ -72,6 +72,24 @@
                     update_saved_state_cache();
                     return new TextEncoder().encode(saved_state).length;
                 };
+                importObject.env.js_ask_name = function (ptr, max_len) {
+                    const name = prompt("Enter your pet's name (max 12 chars):", "") || "";
+                    const bytes = new TextEncoder().encode(name.substring(0, 12));
+                    const len = Math.min(bytes.length, max_len);
+                    const heap = new Uint8Array((importObject.env.memory || wasm_memory).buffer);
+                    heap.set(bytes.subarray(0, len), ptr);
+                    return len;
+                };
+                importObject.env.js_get_user_agent_ptr = function (ptr, max_len) {
+                    const ua = navigator.userAgent;
+                    const isIPad = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                    const fullUA = ua + (isIPad ? " iPad" : "");
+                    const bytes = new TextEncoder().encode(fullUA);
+                    const len = Math.min(bytes.length, max_len);
+                    const heap = new Uint8Array((importObject.env.memory || wasm_memory).buffer);
+                    heap.set(bytes.subarray(0, len), ptr);
+                    return len;
+                };
                 importObject.env.js_get_state = function(ptr) {
                     var encoded = new TextEncoder().encode(saved_state);
                     var mem = new Uint8Array(wasm_memory.buffer, ptr, encoded.length);
