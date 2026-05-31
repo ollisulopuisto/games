@@ -643,7 +643,7 @@ async fn main() {
             laser_x += laser_vx * dt;
             laser_y += laser_vy * dt;
             if laser_x < 0.0 || laser_x > w { laser_vx *= -1.0; laser_x = laser_x.clamp(0.0, w); }
-            if laser_y < 100.0 || laser_y > h { laser_vy *= -1.0; laser_y = laser_y.clamp(100.0, h); }
+            if laser_y < 100.0 || laser_y > h - 80.0 { laser_vy *= -1.0; laser_y = laser_y.clamp(100.0, h - 80.0); }
             
             draw_circle(laser_x, laser_y, 10.0, RED);
 
