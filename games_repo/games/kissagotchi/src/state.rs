@@ -200,49 +200,144 @@ mod tests {
     fn test_initial_state() {
         let state = State::default();
         assert_eq!(state.hunger, 50.0);
+        assert_eq!(state.happiness, 50.0);
+        assert_eq!(state.sleepiness, 0.0);
         assert_eq!(state.energy, 100.0);
+        assert_eq!(state.weight, 5.0);
         assert_eq!(state.name, "Kitty");
         assert!(!state.is_sleeping);
+        assert_eq!(state.current_activity, Activity::Idle);
     }
 
     #[test]
     fn test_feed() {
         let mut state = State::default();
         state.feed();
-        assert_eq!(state.hunger, 80.0);
-        assert_eq!(state.happiness, 55.0);
+        assert_eq!(state.hunger, 80.0); // 50 + 30
+        assert_eq!(state.happiness, 55.0); // 50 + 5
+        assert_eq!(state.weight, 5.5); // 5.0 + 0.5
+        assert_eq!(state.poop_timer, 10.0); // 30 - 30 clamped to 10
+        assert!(!state.is_sleeping);
+    }
+
+    #[test]
+    fn test_feed_bounds() {
+        let mut state = State::default();
+        state.hunger = 90.0;
+        state.happiness = 98.0;
+        state.weight = 19.8;
+        state.feed();
+        assert_eq!(state.hunger, 100.0); // Clamped
+        assert_eq!(state.happiness, 100.0); // Clamped
+        assert_eq!(state.weight, 20.0); // Clamped
     }
 
     #[test]
     fn test_play() {
         let mut state = State::default();
         state.play();
-        assert_eq!(state.happiness, 70.0);
-        assert_eq!(state.energy, 90.0);
-        assert_eq!(state.hunger, 45.0);
+        assert_eq!(state.happiness, 70.0); // 50 + 20
+        assert_eq!(state.energy, 90.0); // 100 - 10
+        assert_eq!(state.hunger, 45.0); // 50 - 5
+        assert_eq!(state.weight, 4.8); // 5.0 - 0.2
+        assert_eq!(state.money, 1);
+        assert!(!state.is_sleeping);
+    }
+
+    #[test]
+    fn test_play_bounds() {
+        let mut state = State::default();
+        state.happiness = 90.0;
+        state.energy = 5.0;
+        state.hunger = 2.0;
+        state.weight = 1.1;
+        state.play();
+        assert_eq!(state.happiness, 100.0); // Clamped
+        assert_eq!(state.energy, 0.0); // Clamped
+        assert_eq!(state.hunger, 0.0); // Clamped
+        assert_eq!(state.weight, 1.0); // Clamped
+    }
+
+    #[test]
+    fn test_sleep() {
+        let mut state = State::default();
+        state.sleep();
+        assert!(state.is_sleeping);
+        assert_eq!(state.current_activity, Activity::Idle);
     }
 
     #[test]
     fn test_update_decay() {
         let mut state = State::default();
         state.update(10.0, true); // 10 seconds
-        assert_eq!(state.hunger, 45.0);
-        assert_eq!(state.happiness, 48.0);
-        assert_eq!(state.sleepiness, 4.0);
-        assert_eq!(state.energy, 97.0);
+        assert_eq!(state.hunger, 45.0); // 50 - 0.5 * 10
+        assert_eq!(state.happiness, 48.0); // 50 - 0.2 * 10
+        assert_eq!(state.sleepiness, 4.0); // 0 + 0.4 * 10
+        assert_eq!(state.energy, 97.0); // 100 - 0.3 * 10
+        assert_eq!(state.age, 10.0);
     }
 
     #[test]
     fn test_sleep_recovery() {
         let mut state = State::default();
         state.energy = 50.0;
+        state.sleepiness = 50.0;
         state.sleep();
+        
         state.update(10.0, true);
-        assert_eq!(state.energy, 70.0);
+        assert_eq!(state.energy, 70.0); // 50 + 2.0 * 10
+        assert_eq!(state.sleepiness, 40.0); // 50 - 1.0 * 10
         assert!(state.is_sleeping);
 
         state.update(20.0, true);
-        assert_eq!(state.energy, 100.0);
-        assert!(!state.is_sleeping); // Wakes up automatically
+        assert_eq!(state.energy, 100.0); // 70 + 40 -> clamped to 100
+        assert_eq!(state.sleepiness, 20.0);
+        assert!(!state.is_sleeping); // Wakes up automatically when energy is 100
+    }
+
+    #[test]
+    fn test_poop_mechanics() {
+        let mut state = State::default();
+        state.poop_timer = 0.0; // Ready to poop immediately
+        state.update(0.1, true); // This update triggers the poop because poop_timer <= 0
+        
+        assert_eq!(state.poop_count, 1);
+        assert_eq!(state.poop_timer, 120.0);
+        
+        // Let's test penalty
+        let happiness_before = state.happiness;
+        state.update(10.0, true);
+        // Penalty = poop_count (1) * 0.5 * 10 = 5.0
+        // Natural decay = 0.2 * 10 = 2.0
+        // Total decay = 7.0
+        assert_eq!(state.happiness, happiness_before - 7.0);
+    }
+
+    #[test]
+    fn test_activity_interrupt() {
+        let mut state = State::default();
+        state.current_activity = Activity::Cleaning;
+        state.activity_timer = 10.0;
+
+        // Feeding should interrupt activity
+        state.feed();
+        assert_eq!(state.current_activity, Activity::Idle);
+        assert_eq!(state.activity_timer, 0.0);
+
+        state.current_activity = Activity::Stretching;
+        state.activity_timer = 10.0;
+
+        // Playing should interrupt activity
+        state.play();
+        assert_eq!(state.current_activity, Activity::Idle);
+        assert_eq!(state.activity_timer, 0.0);
+
+        state.current_activity = Activity::Cleaning;
+        state.activity_timer = 10.0;
+
+        // Sleeping should interrupt activity
+        state.sleep();
+        assert_eq!(state.current_activity, Activity::Idle);
+        assert_eq!(state.activity_timer, 0.0);
     }
 }
