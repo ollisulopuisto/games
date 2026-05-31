@@ -517,12 +517,15 @@ async fn main() {
             format!("Age: {:.0} s", state.age),
         ];
 
-        let bar_w = 200.0;
-        let bar_h = 15.0;
-        let mut text_y = 40.0;
+        let scale = if w < 600.0 { 0.6 } else { 1.0 };
+        let font_size = 24.0 * scale;
+        let bar_w = 200.0 * scale;
+        let bar_h = 15.0 * scale;
+        let y_step = 50.0 * scale;
+        let mut text_y = 40.0 * scale;
 
         for (i, stat_text) in stats.iter().enumerate() {
-            draw_text(stat_text, 20.0, text_y, 24.0, WHITE);
+            draw_text(stat_text, 10.0, text_y, font_size, WHITE);
 
             // Draw progress bar
             let val = match i {
@@ -533,7 +536,8 @@ async fn main() {
                 _ => 0.0,
             };
 
-            draw_rectangle(20.0, text_y + 10.0, bar_w, bar_h, DARKGRAY);
+            let bar_y = text_y + 5.0 * scale;
+            draw_rectangle(10.0, bar_y, bar_w, bar_h, DARKGRAY);
             let fill_color = if val < 20.0 {
                 RED
             } else if val > 80.0 {
@@ -542,14 +546,14 @@ async fn main() {
                 YELLOW
             };
             draw_rectangle(
-                20.0,
-                text_y + 10.0,
+                10.0,
+                bar_y,
                 bar_w * (val / 100.0),
                 bar_h,
                 fill_color,
             );
 
-            text_y += 50.0;
+            text_y += y_step;
         }
 
         // Draw Cat
