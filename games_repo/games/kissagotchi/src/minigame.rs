@@ -44,8 +44,8 @@ impl Minigame {
             return;
         }
 
-        self.timer -= dt;
-        if self.timer <= 0.0 {
+        self.timer = (self.timer - dt).max(0.0);
+        if self.timer == 0.0 {
             self.active = false;
             return;
         }
