@@ -74,11 +74,7 @@ fn generate_click_wav() -> Vec<u8> {
         let t = i as f32 / sample_rate as f32;
         let freq = 800.0 * (1.0 - t / duration);
         phase += freq * 2.0 * std::f32::consts::PI / sample_rate as f32;
-        let sample = if phase.sin() > 0.0 {
-            0.3
-        } else {
-            -0.3
-        };
+        let sample = if phase.sin() > 0.0 { 0.3 } else { -0.3 };
         let amplitude = 1.0 - t / duration;
         samples.push((sample * amplitude * 16383.0) as i16);
     }
@@ -115,7 +111,7 @@ fn generate_purr_wav() -> Vec<u8> {
     let duration = 1.5;
     let num_samples = (sample_rate as f32 * duration) as usize;
     let mut samples = Vec::with_capacity(num_samples);
-    
+
     for i in 0..num_samples {
         let t = i as f32 / sample_rate as f32;
         // Purr base frequency is low (25Hz to 50Hz)
@@ -142,4 +138,3 @@ fn generate_purr_wav() -> Vec<u8> {
     }
     wav
 }
-
