@@ -7,7 +7,7 @@ use crate::game::{Board, Difficulty, COLS, ROWS};
 use crate::input::InputManager;
 use macroquad::prelude::*;
 
-const VERSION: &str = "26.05.30.271";
+const VERSION: &str = "26.05.31.270";
 
 #[derive(Clone, PartialEq, Debug)]
 enum AppState {
