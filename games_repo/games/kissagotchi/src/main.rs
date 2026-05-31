@@ -277,12 +277,14 @@ async fn main() {
         #[cfg(not(target_arch = "wasm32"))]
         let is_mobile = false;
 
-        name_input.update_with_touch(
-            (w / 2.0 - 100.0, 20.0, 200.0, 40.0),
-            (0.0, 0.0, 0.0, 0.0),
-            is_mobile,
-        );
-        state.name = name_input.content.clone();
+        if !in_minigame {
+            name_input.update_with_touch(
+                (w / 2.0 - 100.0, 20.0, 200.0, 40.0),
+                (0.0, 0.0, 0.0, 0.0),
+                is_mobile,
+            );
+            state.name = name_input.content.clone();
+        }
 
         let btn_w = 80.0;
         let btn_h = 40.0;
@@ -436,7 +438,7 @@ async fn main() {
                 // Shop: Buy treat for 5 money
                 if state.money >= 5 {
                     state.money -= 5;
-                    state.weight = (state.weight + 10.0).min(200.0);
+                    state.weight = (state.weight + 1.0).min(20.0);
                     state.happiness = (state.happiness + 30.0).min(100.0);
                     state.hunger = (state.hunger + 40.0).min(100.0);
                     for _ in 0..3 {
@@ -666,7 +668,16 @@ async fn main() {
                 }
             }
 
-            if interacted {
+            let back_x = w / 2.0 - 50.0;
+            let back_y = h - 60.0;
+            let mut clicked_back = false;
+
+            if interacted && mx >= back_x && mx <= back_x + 100.0 && my >= back_y && my <= back_y + 40.0 {
+                clicked_back = true;
+                in_minigame = false;
+            }
+
+            if interacted && !clicked_back {
                 let dist = ((mx - laser_x).powi(2) + (my - laser_y).powi(2)).sqrt();
                 if dist < 40.0 {
                     state.play();
@@ -688,13 +699,8 @@ async fn main() {
                 }
             }
 
-            let back_x = w / 2.0 - 50.0;
-            let back_y = h - 60.0;
             draw_rectangle(back_x, back_y, 100.0, 40.0, GRAY);
             draw_text("Back", back_x + 10.0, back_y + 30.0, 30.0, WHITE);
-            if interacted && mx >= back_x && mx <= back_x + 100.0 && my >= back_y && my <= back_y + 40.0 {
-                in_minigame = false;
-            }
         }
 
         // Update and Draw Particles
