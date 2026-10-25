@@ -26,7 +26,7 @@ jobs:
       shared_changed: ${{ steps.detect_changes.outputs.shared_changed }}
       rebuild_all: ${{ steps.detect_changes.outputs.rebuild_all }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -34,7 +34,7 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -75,25 +75,25 @@ jobs:
           echo "rebuild_all=$REBUILD_ALL" >> "$GITHUB_OUTPUT"
 
       - name: Cache zookeeper dist
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: games_repo/games/zookeeper/dist
           key: zookeeper-dist-${{ hashFiles('games_repo/games/zookeeper/**', 'games_repo/scripts/**', 'games_repo/assets/**', 'games_repo/Cargo.toml', 'games_repo/Cargo.lock', 'Cargo.toml', 'Cargo.lock') }}
 
       - name: Cache bubbles dist
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: games_repo/games/bubbles/dist
           key: bubbles-dist-${{ hashFiles('games_repo/games/bubbles/**', 'games_repo/scripts/**', 'games_repo/assets/**', 'games_repo/Cargo.toml', 'games_repo/Cargo.lock', 'Cargo.toml', 'Cargo.lock') }}
 
       - name: Cache lumines dist
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: games_repo/games/lumines/dist
           key: lumines-dist-${{ hashFiles('games_repo/games/lumines/**', 'games_repo/scripts/**', 'games_repo/assets/**', 'games_repo/Cargo.toml', 'games_repo/Cargo.lock', 'Cargo.toml', 'Cargo.lock') }}
 
       - name: Cache gravitris dist
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: games_repo/games/gravitris/dist
           key: gravitris-dist-${{ hashFiles('games_repo/games/gravitris/**', 'games_repo/scripts/**', 'games_repo/assets/**', 'games_repo/Cargo.toml', 'games_repo/Cargo.lock', 'Cargo.toml', 'Cargo.lock') }}
@@ -123,10 +123,10 @@ jobs:
           find docs -name "*.wasm" -exec wasm-opt -O3 {} -o {} \;
           
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v6
         
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: 'games_repo/docs'
 
@@ -140,4 +140,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
