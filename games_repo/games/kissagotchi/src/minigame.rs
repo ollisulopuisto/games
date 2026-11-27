@@ -61,7 +61,7 @@ impl Minigame {
         draw_rectangle(0.0, 0.0, w, h, Color::new(0.0, 0.0, 0.0, 0.7));
         draw_text("Catch the laser!", 20.0, 40.0, 40.0, WHITE);
         draw_text(
-            &format!("Time left: {:.1}", self.timer),
+            format!("Time left: {:.1}", self.timer),
             20.0,
             80.0,
             40.0,

@@ -43,11 +43,11 @@ pub fn add_score(name: String, score: u32) {
     println!("Adding score for {}: {}", name, score);
     let mut scores = load_scores();
     scores.push(ScoreEntry { name, score });
-    scores.sort_by(|a, b| b.score.cmp(&a.score));
+    scores.sort_by_key(|a| std::cmp::Reverse(a.score));
     scores.truncate(10);
     save_scores(&scores);
     println!(
         "Scores saved. Current top 3: {:?}",
-        &scores.iter().take(3).collect::<Vec<_>>()
+        scores.iter().take(3).collect::<Vec<_>>()
     );
 }

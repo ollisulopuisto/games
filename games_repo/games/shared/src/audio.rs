@@ -470,7 +470,9 @@ mod tests {
         assert!(duration > 0.0);
         assert!(wav.len() > 44);
         let has_non_zero_sample = wav[44..]
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .any(|chunk| i16::from_le_bytes([chunk[0], chunk[1]]) != 0);
         assert!(has_non_zero_sample);
     }

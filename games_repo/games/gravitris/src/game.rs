@@ -148,9 +148,7 @@ impl Board {
                     self.grid[row][x] = self.grid[row - 1][x];
                 }
             }
-            for x in 0..COLS {
-                self.grid[0][x] = None;
-            }
+            self.grid[0].fill(None);
         }
         self.add_lines_cleared(lines_to_clear.len() as u32);
         self.clearing_lines.clear();
@@ -307,8 +305,8 @@ impl Board {
                 1.0
             };
 
-            for x in 0..COLS {
-                if let Some(piece_type) = self.grid[y][x] {
+            for (x, cell) in self.grid[y].iter().enumerate() {
+                if let Some(piece_type) = cell {
                     let mut color = piece_type.color();
                     color.a = alpha;
 
@@ -453,10 +451,10 @@ impl Board {
 
     pub fn clear_lines(&mut self) -> usize {
         let mut lines_found = Vec::new();
-        for y in 0..ROWS {
+        for (y, row) in self.grid.iter().enumerate() {
             let mut full = true;
-            for x in 0..COLS {
-                if self.grid[y][x].is_none() {
+            for cell in row {
+                if cell.is_none() {
                     full = false;
                     break;
                 }
@@ -513,16 +511,12 @@ mod tests {
     #[test]
     fn test_clear_lines() {
         let mut board = Board::new(Difficulty::Normal);
-        for x in 0..COLS {
-            board.grid[ROWS - 1][x] = Some(PieceType::O);
-        }
+        board.grid[ROWS - 1].fill(Some(PieceType::O));
 
         let cleared = board.clear_lines();
         assert_eq!(cleared, 1);
         board.update(0.3); // Advance time to finalize clear
-        for x in 0..COLS {
-            assert!(board.grid[ROWS - 1][x].is_none());
-        }
+        assert!(board.grid[ROWS - 1].iter().all(Option::is_none));
     }
 
     #[test]

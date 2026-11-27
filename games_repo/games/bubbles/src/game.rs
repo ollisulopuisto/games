@@ -169,10 +169,10 @@ pub struct Level {
 
 impl Level {
     pub fn is_wall(&self, x: i32, y: i32) -> bool {
-        if x < 0 || x >= 16 {
+        if !(0..16).contains(&x) {
             return true;
         }
-        if y < 0 || y >= 14 {
+        if !(0..14).contains(&y) {
             return false;
         }
         self.tiles[(y * 16 + x) as usize] == 1
@@ -934,7 +934,7 @@ impl Game {
 
         // P1 HUD
         draw_text(
-            &format!(
+            format!(
                 "P1: {:06} L:{}",
                 self.players[0].score, self.players[0].lives
             ),
@@ -1085,17 +1085,13 @@ fn handle_player_collision(p: &mut Player, level: &Level) {
     let left_tile_x = ((p.pos.x + PLAYER_WALL_CHECK_LEFT_OFFSET) / TILE_SIZE) as i32;
     let right_tile_x = ((p.pos.x + PLAYER_WALL_CHECK_RIGHT_OFFSET) / TILE_SIZE) as i32;
 
-    if level.is_wall(left_tile_x, ty) {
-        if p.vel.x < 0.0 {
-            p.pos.x = (left_tile_x as f32 + 1.0) * TILE_SIZE - PLAYER_WALL_CHECK_LEFT_OFFSET;
-            p.vel.x = 0.0;
-        }
+    if level.is_wall(left_tile_x, ty) && p.vel.x < 0.0 {
+        p.pos.x = (left_tile_x as f32 + 1.0) * TILE_SIZE - PLAYER_WALL_CHECK_LEFT_OFFSET;
+        p.vel.x = 0.0;
     }
-    if level.is_wall(right_tile_x, ty) {
-        if p.vel.x > 0.0 {
-            p.pos.x = right_tile_x as f32 * TILE_SIZE - PLAYER_WALL_CHECK_RIGHT_OFFSET;
-            p.vel.x = 0.0;
-        }
+    if level.is_wall(right_tile_x, ty) && p.vel.x > 0.0 {
+        p.pos.x = right_tile_x as f32 * TILE_SIZE - PLAYER_WALL_CHECK_RIGHT_OFFSET;
+        p.vel.x = 0.0;
     }
 }
 
@@ -1127,15 +1123,16 @@ fn handle_enemy_collision(e: &mut Enemy, level: &Level) -> bool {
         }
     }
 
-    if level.is_wall(ground_tile_x as i32, ground_tile_y as i32) {
-        if e.vel.y >= 0.0 && e.pos.y + 16.0 - e.vel.y <= (ground_tile_y as i32 * 16) as f32 {
-            e.pos.y = (ground_tile_y as i32 * 16) as f32 - 16.0;
-            if e.vel.y > 1.0 {
-                e.impact_timer = 0.15;
-            }
-            e.vel.y = 0.0;
-            grounded = true;
+    if level.is_wall(ground_tile_x as i32, ground_tile_y as i32)
+        && e.vel.y >= 0.0
+        && e.pos.y + 16.0 - e.vel.y <= (ground_tile_y as i32 * 16) as f32
+    {
+        e.pos.y = (ground_tile_y as i32 * 16) as f32 - 16.0;
+        if e.vel.y > 1.0 {
+            e.impact_timer = 0.15;
         }
+        e.vel.y = 0.0;
+        grounded = true;
     }
     // Wall bounce: check leading edge
     let tx = if e.vel.x > 0.0 {

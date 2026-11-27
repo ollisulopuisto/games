@@ -45,8 +45,8 @@ async fn main() {
         clear_background(Color::new(0.1, 0.1, 0.12, 1.0));
 
         draw_text("Music Pattern Editor", 20.0, 30.0, 30.0, WHITE);
-        draw_text(&format!("BPM: {:.0}", state.bpm), 20.0, 60.0, 20.0, GRAY);
-        draw_text(&format!("Seed: {}", state.seed), 20.0, 85.0, 20.0, GRAY);
+        draw_text(format!("BPM: {:.0}", state.bpm), 20.0, 60.0, 20.0, GRAY);
+        draw_text(format!("Seed: {}", state.seed), 20.0, 85.0, 20.0, GRAY);
 
         let start_y = 120.0;
         let col_w = 60.0;
@@ -55,7 +55,7 @@ async fn main() {
         draw_text("Block:", 20.0, start_y + 25.0, 20.0, WHITE);
         for i in 0..8 {
             draw_text(
-                &(i + 1).to_string(),
+                (i + 1).to_string(),
                 100.0 + i as f32 * col_w + 20.0,
                 start_y - 10.0,
                 18.0,

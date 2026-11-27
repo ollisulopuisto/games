@@ -83,10 +83,8 @@ impl InputManager {
                     if touch.phase == TouchPhase::Started {
                         self.p1.bubble = true;
                     }
-                } else if tx > virtual_width - 120.0 {
-                    if touch.phase == TouchPhase::Started {
-                        self.p1.jump = true;
-                    }
+                } else if tx > virtual_width - 120.0 && touch.phase == TouchPhase::Started {
+                    self.p1.jump = true;
                 }
             }
 
