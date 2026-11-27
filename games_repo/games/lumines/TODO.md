@@ -30,3 +30,6 @@
 - [ ] **Optimization**: Ensure 60 FPS performance even with many active particles.
 - [ ] **Testing**: Add unit tests for the matching and gravity logic.
 - [ ] **CI/CD**: Ensure the build pipeline correctly optimizes the WASM binary size.
+
+## Fixes
+- [x] Difficulty buttons share layout for rendering and mouse/touch hit testing; regression tests cover desktop and portrait sizes (2026-11-27).

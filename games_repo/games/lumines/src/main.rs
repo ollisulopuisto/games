@@ -11,7 +11,7 @@ use shared::theme::{BlockColor, BlockShape};
 
 const COLS: usize = 16;
 const ROWS: usize = 10;
-const VERSION: &str = "26.05.31.278";
+const VERSION: &str = "26.11.27.2";
 
 const BEATS_PER_SWEEP: f32 = 8.0;
 const FREEZE_DURATION: f32 = 4.0;
@@ -96,6 +96,32 @@ const MAX_HIGH_SCORES: usize = 10;
 const MAX_NAME_LENGTH: usize = 10;
 
 use shared::leaderboard::GameMode;
+
+fn difficulty_button_rects(sw: f32, sh: f32) -> [(GameMode, Rect); 3] {
+    let width = (sw * 0.3).clamp(120.0, 240.0);
+    let height = (sh * 0.08).clamp(40.0, 60.0);
+    let x = (sw - width) / 2.0;
+    let rule_spacing = (sh * 0.025).clamp(14.0, 22.0) * 1.2;
+    let top = sh * 0.4 + 3.0 * rule_spacing + sh * 0.08 + sh * 0.1;
+    [GameMode::Easy, GameMode::Normal, GameMode::Hard].map(|mode| {
+        let index = match mode {
+            GameMode::Easy => 0,
+            GameMode::Normal => 1,
+            _ => 2,
+        };
+        (
+            mode,
+            Rect::new(x, top + index as f32 * height * 1.3, width, height),
+        )
+    })
+}
+
+fn difficulty_at(sw: f32, sh: f32, point: Vec2) -> Option<GameMode> {
+    difficulty_button_rects(sw, sh)
+        .into_iter()
+        .find(|(_, rect)| rect.contains(point))
+        .map(|(mode, _)| mode)
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 struct LeaderboardEntry {
@@ -894,24 +920,14 @@ impl Game {
 
         if self.waiting_to_start && self.difficulty_selection {
             if is_mouse_button_pressed(MouseButton::Left) {
-                let btn_w = (sw * 0.3).clamp(120.0, 240.0);
-                let btn_h = (sh * 0.08).clamp(40.0, 60.0);
-                let btn_x = sw / 2.0 - btn_w / 2.0;
-                let mut btn_y = sh * 0.4 + sh * 0.08 + sh * 0.1; // Matches draw() logic
-                let btn_spacing = btn_h * 1.3;
-
-                let options = [GameMode::Easy, GameMode::Normal, GameMode::Hard];
-                for opt in options {
-                    if mx >= btn_x && mx <= btn_x + btn_w && my >= btn_y && my <= btn_y + btn_h {
-                        self.difficulty = opt;
-                        self.difficulty_selection = false;
-                        self.waiting_to_start = false;
-                        self.entry_timer = ENTRY_DELAY;
-                        self.audio.play_music();
-                        self.update_difficulty();
-                        return;
-                    }
-                    btn_y += btn_spacing;
+                if let Some(mode) = difficulty_at(sw, sh, vec2(mx, my)) {
+                    self.difficulty = mode;
+                    self.difficulty_selection = false;
+                    self.waiting_to_start = false;
+                    self.entry_timer = ENTRY_DELAY;
+                    self.audio.play_music();
+                    self.update_difficulty();
+                    return;
                 }
             }
             if is_key_pressed(KeyCode::Key1) {
@@ -2011,35 +2027,27 @@ impl Game {
             );
 
             if self.difficulty_selection {
-                current_y += sh * 0.1;
-                let btn_w = (sw * 0.3).clamp(120.0, 240.0);
-                let btn_h = (sh * 0.08).clamp(40.0, 60.0);
-                let btn_x = sw / 2.0 - btn_w / 2.0;
-                let btn_spacing = btn_h * 1.3;
-
-                let options = [
-                    (GameMode::Easy, "EASY", GREEN),
-                    (GameMode::Normal, "NORMAL", YELLOW),
-                    (GameMode::Hard, "HARD", RED),
-                ];
-
-                for (_, label, color) in options {
+                for (mode, rect) in difficulty_button_rects(sw, sh) {
+                    let (label, color) = match mode {
+                        GameMode::Easy => ("EASY", GREEN),
+                        GameMode::Normal => ("NORMAL", YELLOW),
+                        _ => ("HARD", RED),
+                    };
                     draw_rectangle(
-                        btn_x,
-                        current_y,
-                        btn_w,
-                        btn_h,
+                        rect.x,
+                        rect.y,
+                        rect.w,
+                        rect.h,
                         Color::new(color.r, color.g, color.b, 0.8),
                     );
-                    let lm = measure_text(label, None, (btn_h * 0.5) as u16, 1.0);
+                    let lm = measure_text(label, None, (rect.h * 0.5) as u16, 1.0);
                     draw_text(
                         label,
                         sw / 2.0 - lm.width / 2.0,
-                        current_y + btn_h * 0.65,
-                        btn_h * 0.5,
+                        rect.y + rect.h * 0.65,
+                        rect.h * 0.5,
                         WHITE,
                     );
-                    current_y += btn_spacing;
                 }
             } else {
                 current_y += sh * 0.05;
@@ -2280,6 +2288,53 @@ async fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn drawn_difficulty_centres_select_their_own_mode() {
+        for (sw, sh) in [(800.0_f32, 600.0_f32), (390.0, 844.0), (1920.0, 1080.0)] {
+            // Follow the visible rules, prompt and buttons, independently of hit testing.
+            let rule_spacing = (sh * 0.025).clamp(14.0, 22.0) * 1.2;
+            let top = sh * 0.4 + 3.0 * rule_spacing + sh * 0.08 + sh * 0.1;
+            let height = (sh * 0.08).clamp(40.0, 60.0);
+            for (index, expected) in [GameMode::Easy, GameMode::Normal, GameMode::Hard]
+                .into_iter()
+                .enumerate()
+            {
+                let point = vec2(sw / 2.0, top + index as f32 * height * 1.3 + height / 2.0);
+                assert_eq!(
+                    difficulty_at(sw, sh, point),
+                    Some(expected),
+                    "{sw}x{sh}, {expected:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn difficulty_gaps_and_outside_points_do_not_select() {
+        for (sw, sh) in [(800.0, 600.0), (390.0, 844.0), (1920.0, 1080.0)] {
+            let buttons = difficulty_button_rects(sw, sh);
+            for (mode, rect) in buttons {
+                assert_eq!(
+                    difficulty_at(sw, sh, vec2(rect.x + 1.0, rect.y + 1.0)),
+                    Some(mode)
+                );
+                assert_eq!(
+                    difficulty_at(sw, sh, vec2(rect.x + rect.w - 1.0, rect.y + rect.h - 1.0)),
+                    Some(mode)
+                );
+                assert_eq!(
+                    difficulty_at(sw, sh, vec2(rect.x - 1.0, rect.y + rect.h / 2.0)),
+                    None
+                );
+                assert_eq!(
+                    difficulty_at(sw, sh, vec2(sw / 2.0, rect.y + rect.h * 1.15)),
+                    None
+                );
+            }
+            assert_eq!(difficulty_at(sw, sh, vec2(0.0, 0.0)), None);
+        }
+    }
 
     #[test]
     fn lock_delay_decreases_with_level() {

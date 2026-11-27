@@ -2,6 +2,10 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
+## [26.11.27.2] - 2026-11-27
+### Fixed
+- Lumines difficulty buttons now use the rendered layout for hit testing, including the rules text above them. Regression tests cover desktop and portrait button centres, edges and gaps.
+
 ## [26.11.27.1] - 2026-11-27
 ### Changed
 - Restore strict current-stable Clippy checks across the Rust games without changing gameplay: use equivalent standard-library operations, iterator traversal, and grouped Lumines drawing parameters.
