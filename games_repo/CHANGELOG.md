@@ -2,6 +2,12 @@
 
 All notable changes to the games in this monorepo will be documented in this file. This project uses [CalVer](https://calver.org/) for versioning.
 
+## [26.11.27.1] - 2026-11-27
+### Changed
+- Restore strict current-stable Clippy checks across the Rust games without changing gameplay: use equivalent standard-library operations, iterator traversal, and grouped Lumines drawing parameters.
+- Keep Zookeeper animation arrays heap-backed to avoid oversized game states. Pause/clone regression tests preserve clearing matches and every shuffle endpoint.
+- No CI workflow changes or lint suppressions. This is a prerequisite for the separate Lumines difficulty-button fix.
+
 ## [26.5.31.278] - 2026-05-31
 ### Changed
 - **Kissagotchi Gestures:** Replaced standard Feed and Sleep buttons with immersive touch mechanics: drag food from a bowl to feed, swipe to pet (triggers purring), and drag a night curtain down to sleep.

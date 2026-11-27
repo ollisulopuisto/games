@@ -130,7 +130,7 @@ async fn main() {
                         last_scores.push((final_name.clone(), p.score));
                     }
                     let mut all_scores = storage::load_scores();
-                    all_scores.sort_by(|a, b| b.score.cmp(&a.score));
+                    all_scores.sort_by_key(|a| std::cmp::Reverse(a.score));
                     state = AppState::Leaderboard {
                         last_scores,
                         all_scores,
@@ -397,7 +397,7 @@ async fn main() {
                     let y = vy + 65.0 * scale + (i as f32 * 14.5 * scale);
 
                     // Rank column (left aligned)
-                    draw_text(&format!("{}.", i + 1), rank_x, y, text_size, color);
+                    draw_text(format!("{}.", i + 1), rank_x, y, text_size, color);
 
                     // Name column (left aligned)
                     draw_text(&s.name, name_x, y, text_size, color);

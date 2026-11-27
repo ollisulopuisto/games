@@ -119,6 +119,8 @@ struct Settings {
     slow_mode: bool,
 }
 
+type ShuffleMapping = [(usize, usize, usize, usize, u8); COLS * ROWS];
+
 /// Represents the current state of the game loop and any active animations.
 #[derive(Clone, PartialEq, Debug)]
 enum GameState {
@@ -138,7 +140,7 @@ enum GameState {
     /// Tiles that formed a match are "popping" or fading before disappearing.
     Clearing {
         timer: f32,
-        matches: [(usize, usize); COLS * ROWS], // Simplified match tracking for animation
+        matches: Box<[(usize, usize); COLS * ROWS]>, // Fixed-size animation matches
         match_count: usize,
     },
     /// Empty spaces are being filled by tiles falling from above.
@@ -156,7 +158,7 @@ enum GameState {
     Shuffling {
         target_grid: [[u8; COLS]; ROWS],
         /// (from_x, from_y, to_x, to_y, tile_type)
-        mapping: [(usize, usize, usize, usize, u8); COLS * ROWS],
+        mapping: Box<ShuffleMapping>,
         timer: f32,
     },
     /// Celebration for clearing a level.
@@ -245,7 +247,7 @@ impl Board {
         // Level 3-4: 7
         // ...
         // Level 29-30: 20
-        let extra = (self.level as u32).saturating_sub(1) / 2;
+        let extra = self.level.saturating_sub(1) / 2;
         let active = (6u32 + extra).min(TILE_TYPES as u32);
         active as u8
     }
@@ -288,7 +290,7 @@ impl Board {
         self.new_record = self
             .high_scores
             .first()
-            .map_or(true, |best| score > best.score);
+            .is_none_or(|best| score > best.score);
 
         // Add locally first
         self.high_scores.push(LeaderboardEntry {
@@ -298,7 +300,7 @@ impl Board {
             mode,
             snail: false,
         });
-        self.high_scores.sort_by(|a, b| b.score.cmp(&a.score));
+        self.high_scores.sort_by_key(|a| std::cmp::Reverse(a.score));
         self.high_scores.truncate(MAX_HIGH_SCORES);
 
         // Save to JS
@@ -429,15 +431,11 @@ impl Board {
             for x in 0..COLS {
                 // Try swapping right
                 if x < COLS - 1 {
-                    let temp = self.grid[y][x];
-                    self.grid[y][x] = self.grid[y][x + 1];
-                    self.grid[y][x + 1] = temp;
+                    self.grid[y].swap(x, x + 1);
                     if self.has_match_at(x, y) || self.has_match_at(x + 1, y) {
                         moves += 1;
                     }
-                    let temp = self.grid[y][x];
-                    self.grid[y][x] = self.grid[y][x + 1];
-                    self.grid[y][x + 1] = temp;
+                    self.grid[y].swap(x, x + 1);
                 }
                 // Try swapping down
                 if y < ROWS - 1 {
@@ -778,7 +776,7 @@ async fn main() {
                         } else {
                             board.state = GameState::Clearing {
                                 timer: 0.0,
-                                matches: match_arr,
+                                matches: Box::new(match_arr),
                                 match_count: count,
                             };
                             board.combo_count = 1;
@@ -802,8 +800,7 @@ async fn main() {
             } => {
                 timer += dt;
                 if timer >= CLEAR_DURATION {
-                    for i in 0..match_count {
-                        let (mx, my) = matches[i];
+                    for &(mx, my) in &matches[..match_count] {
                         board.grid[my][mx] = None;
                     }
                     let mut points = (match_count as u32 * 10) * board.combo_count;
@@ -815,8 +812,7 @@ async fn main() {
                     // Spawn floating score at the center of the match
                     let mut avg_x = 0.0;
                     let mut avg_y = 0.0;
-                    for i in 0..match_count {
-                        let (mx, my) = matches[i];
+                    for &(mx, my) in &matches[..match_count] {
                         avg_x += mx as f32;
                         avg_y += my as f32;
                     }
@@ -903,7 +899,7 @@ async fn main() {
                             } else {
                                 board.state = GameState::Clearing {
                                     timer: 0.0,
-                                    matches: match_arr,
+                                    matches: Box::new(match_arr),
                                     match_count: count,
                                 };
                                 board.combo_count += 1;
@@ -929,9 +925,9 @@ async fn main() {
                 timer += dt;
                 if timer >= 1.5 {
                     let mut tiles = Vec::new();
-                    for y in 0..ROWS {
-                        for x in 0..COLS {
-                            if let Some(t) = board.grid[y][x] {
+                    for (y, row) in board.grid.iter().enumerate() {
+                        for (x, &cell) in row.iter().enumerate() {
+                            if let Some(t) = cell {
                                 tiles.push((x, y, t));
                             }
                         }
@@ -952,10 +948,9 @@ async fn main() {
 
                         let mut temp_grid = [[None; COLS]; ROWS];
                         let mut possible = true;
-                        for i in 0..tiles.len() {
+                        for (i, &(_, _, t)) in tiles.iter().enumerate() {
                             let x = i % COLS;
                             let y = i / COLS;
-                            let (_, _, t) = tiles[i];
                             temp_grid[y][x] = Some(t);
                             if has_match_static(&temp_grid, x, y) {
                                 possible = false;
@@ -989,7 +984,7 @@ async fn main() {
                         board.grid = [[None; COLS]; ROWS];
                         board.state = GameState::Shuffling {
                             target_grid: target,
-                            mapping,
+                            mapping: Box::new(mapping),
                             timer: 0.0,
                         };
                         if !settings.muted {
@@ -1029,7 +1024,7 @@ async fn main() {
                         board.grid = [[None; COLS]; ROWS];
                         board.state = GameState::Shuffling {
                             target_grid: target,
-                            mapping,
+                            mapping: Box::new(mapping),
                             timer: 0.0,
                         };
                         if !settings.muted {
@@ -1288,8 +1283,7 @@ async fn main() {
                                 ref matches,
                                 match_count,
                             } => {
-                                for i in 0..match_count {
-                                    let (mx, my) = matches[i];
+                                for &(mx, my) in &matches[..match_count] {
                                     if x == mx && y == my {
                                         let t = (timer / CLEAR_DURATION).min(1.0);
                                         // Pop with anticipation: squash first (0.0-0.2), then burst
@@ -1580,11 +1574,11 @@ async fn main() {
                 let is_highlight = board
                     .last_submitted
                     .as_ref()
-                    .map_or(false, |(n, s)| n == &entry.name && s == &entry.score);
+                    .is_some_and(|(n, s)| n == &entry.name && s == &entry.score);
                 let color = if is_highlight { YELLOW } else { WHITE };
 
                 // Rank column (left aligned)
-                draw_text(&format!("{}.", i + 1), rank_x, y, row_font_size, color);
+                draw_text(format!("{}.", i + 1), rank_x, y, row_font_size, color);
 
                 // Name column (left aligned)
                 draw_text(&entry.name, name_x, y, row_font_size, color);
@@ -1810,15 +1804,11 @@ fn count_available_moves_static(grid: &[[u8; COLS]; ROWS]) -> usize {
     for y in 0..ROWS {
         for x in 0..COLS {
             if x < COLS - 1 {
-                let t = temp[y][x];
-                temp[y][x] = temp[y][x + 1];
-                temp[y][x + 1] = t;
+                temp[y].swap(x, x + 1);
                 if has_match_static(&temp, x, y) || has_match_static(&temp, x + 1, y) {
                     moves += 1;
                 }
-                let t = temp[y][x];
-                temp[y][x] = temp[y][x + 1];
-                temp[y][x + 1] = t;
+                temp[y].swap(x, x + 1);
             }
             if y < ROWS - 1 {
                 let t = temp[y][x];
@@ -1860,4 +1850,75 @@ fn create_wav(freq: f32, duration: f32, volume: f32) -> Vec<u8> {
         wav.extend_from_slice(&((sample * amplitude * 32767.0) as i16).to_le_bytes());
     }
     wav
+}
+
+#[cfg(test)]
+mod lint_refactor_tests {
+    use super::*;
+
+    #[test]
+    fn paused_clearing_keeps_matches_count_and_timer() {
+        let mut matches = [(0, 0); COLS * ROWS];
+        matches[0] = (2, 3);
+        matches[1] = (3, 3);
+        matches[2] = (4, 3);
+        let state = GameState::Clearing {
+            timer: 0.17,
+            matches: Box::new(matches),
+            match_count: 3,
+        };
+        let paused = GameState::Paused {
+            previous_state: Box::new(state.clone()),
+        };
+        if let GameState::Paused { previous_state } = paused.clone() {
+            assert_eq!(*previous_state, state);
+            if let GameState::Clearing {
+                matches,
+                match_count,
+                timer,
+            } = *previous_state
+            {
+                assert_eq!(timer, 0.17);
+                assert_eq!(&matches[..match_count], &[(2, 3), (3, 3), (4, 3)]);
+            } else {
+                panic!("clearing state lost");
+            }
+        } else {
+            panic!("pause state lost");
+        }
+    }
+
+    #[test]
+    fn shuffling_clone_preserves_every_animation_endpoint() {
+        let mapping = std::array::from_fn(|i| {
+            (
+                i % COLS,
+                i / COLS,
+                COLS - 1 - i % COLS,
+                ROWS - 1 - i / COLS,
+                (i % 6) as u8,
+            )
+        });
+        let target_grid = std::array::from_fn(|y| std::array::from_fn(|x| ((x + y) % 6) as u8));
+        let state = GameState::Shuffling {
+            target_grid,
+            mapping: Box::new(mapping),
+            timer: 0.25,
+        };
+        let cloned = state.clone();
+        assert_eq!(state, cloned);
+        if let GameState::Shuffling {
+            target_grid: target,
+            mapping: endpoints,
+            timer,
+        } = cloned
+        {
+            assert_eq!(target, target_grid);
+            assert_eq!(*endpoints, mapping);
+            assert_eq!(timer, 0.25);
+        } else {
+            panic!("shuffle state lost");
+        }
+        assert!(std::mem::size_of::<GameState>() < std::mem::size_of::<ShuffleMapping>());
+    }
 }

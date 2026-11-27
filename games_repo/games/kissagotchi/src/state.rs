@@ -222,10 +222,12 @@ mod tests {
 
     #[test]
     fn test_feed_bounds() {
-        let mut state = State::default();
-        state.hunger = 90.0;
-        state.happiness = 98.0;
-        state.weight = 19.8;
+        let mut state = State {
+            hunger: 90.0,
+            happiness: 98.0,
+            weight: 19.8,
+            ..State::default()
+        };
         state.feed();
         assert_eq!(state.hunger, 100.0); // Clamped
         assert_eq!(state.happiness, 100.0); // Clamped
@@ -246,11 +248,13 @@ mod tests {
 
     #[test]
     fn test_play_bounds() {
-        let mut state = State::default();
-        state.happiness = 90.0;
-        state.energy = 5.0;
-        state.hunger = 2.0;
-        state.weight = 1.1;
+        let mut state = State {
+            happiness: 90.0,
+            energy: 5.0,
+            hunger: 2.0,
+            weight: 1.1,
+            ..State::default()
+        };
         state.play();
         assert_eq!(state.happiness, 100.0); // Clamped
         assert_eq!(state.energy, 0.0); // Clamped
@@ -279,9 +283,11 @@ mod tests {
 
     #[test]
     fn test_sleep_recovery() {
-        let mut state = State::default();
-        state.energy = 50.0;
-        state.sleepiness = 50.0;
+        let mut state = State {
+            energy: 50.0,
+            sleepiness: 50.0,
+            ..State::default()
+        };
         state.sleep();
 
         state.update(10.0, true);
@@ -297,8 +303,10 @@ mod tests {
 
     #[test]
     fn test_poop_mechanics() {
-        let mut state = State::default();
-        state.poop_timer = 0.0; // Ready to poop immediately
+        let mut state = State {
+            poop_timer: 0.0,
+            ..State::default()
+        };
         state.update(0.1, true); // This update triggers the poop because poop_timer <= 0
 
         assert_eq!(state.poop_count, 1);
@@ -315,9 +323,11 @@ mod tests {
 
     #[test]
     fn test_activity_interrupt() {
-        let mut state = State::default();
-        state.current_activity = Activity::Cleaning;
-        state.activity_timer = 10.0;
+        let mut state = State {
+            current_activity: Activity::Cleaning,
+            activity_timer: 10.0,
+            ..State::default()
+        };
 
         // Feeding should interrupt activity
         state.feed();

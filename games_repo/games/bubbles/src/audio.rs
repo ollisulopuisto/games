@@ -324,9 +324,9 @@ fn generate_music_wav(seed: Option<u32>) -> Vec<u8> {
 
         let mut lead = 0.0;
         // Lengthen notes: Only change note on eighths (every 2 sixteen steps) for a calmer feel
-        let is_note_start = melody_step % 2 == 0;
+        let is_note_start = melody_step.is_multiple_of(2);
         if is_note_start || (m_rand() % 8 == 0) {
-            let freq = midi_to_freq(scale[note_idx] as i32);
+            let freq = midi_to_freq(scale[note_idx]);
             let phase = t * freq * 2.0 * std::f32::consts::PI;
             let tri = (2.0 / std::f32::consts::PI) * (phase.sin().asin());
             lead = tri * 0.15;
@@ -337,14 +337,14 @@ fn generate_music_wav(seed: Option<u32>) -> Vec<u8> {
 
         // --- Bass ---
         let bass_step = sixteen_idx % 16;
-        let b_note = if bass_step % 4 == 0 {
+        let b_note = if bass_step.is_multiple_of(4) {
             root
         } else if bass_step % 8 == 6 {
             root + 7
         } else {
             root
         };
-        let b_freq = midi_to_freq(b_note as i32);
+        let b_freq = midi_to_freq(b_note);
         let bass = if (t * b_freq * 2.0 * std::f32::consts::PI).sin() > 0.0 {
             0.12
         } else {
@@ -355,7 +355,7 @@ fn generate_music_wav(seed: Option<u32>) -> Vec<u8> {
 
         // --- Drums ---
         let mut drums = 0.0;
-        if beat_idx % 2 == 0 && t_beat < 0.15 {
+        if beat_idx.is_multiple_of(2) && t_beat < 0.15 {
             let k_f_start = 80.0;
             let k_f_end = 30.0;
             let k_d = 0.15;

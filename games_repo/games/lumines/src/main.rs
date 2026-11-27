@@ -330,12 +330,12 @@ fn draw_stylized_block(
     y: f32,
     size: f32,
     color: Color,
-    border_width: f32,
-    border_color: Color,
-    scale_x: f32,
-    scale_y: f32,
+    border: (f32, Color),
+    scale: (f32, f32),
     shape: BlockShape,
 ) {
+    let (border_width, border_color) = border;
+    let (scale_x, scale_y) = scale;
     let w = size * scale_x;
     let h = size * scale_y;
     let bx = x + (size - w) * 0.5;
@@ -769,7 +769,7 @@ impl Game {
             score: self.score,
             mode: self.difficulty,
         });
-        self.high_scores.sort_by(|a, b| b.score.cmp(&a.score));
+        self.high_scores.sort_by_key(|a| std::cmp::Reverse(a.score));
         self.high_scores.truncate(MAX_HIGH_SCORES);
         self.new_score_rank = self
             .high_scores
@@ -1185,11 +1185,9 @@ impl Game {
                 // Dragging to move
                 let cell_w = screen_width() / COLS as f32;
                 let dx = (diff.x / cell_w) as i32;
-                if dx != 0 {
-                    if self.move_active(dx, 0) {
-                        self.swipe_occurred = true;
-                        self.swipe_start = Some(mouse_pos);
-                    }
+                if dx != 0 && self.move_active(dx, 0) {
+                    self.swipe_occurred = true;
+                    self.swipe_start = Some(mouse_pos);
                 }
             }
         }
@@ -1246,8 +1244,8 @@ impl Game {
     fn collides(&self, x: i32, y: i32) -> bool {
         for r in 0..2 {
             for c in 0..2 {
-                let gx = x + c as i32;
-                let gy = y + r as i32;
+                let gx = x + c;
+                let gy = y + r;
                 if gx < 0 || gx >= COLS as i32 || gy >= ROWS as i32 {
                     return true;
                 }
@@ -1523,7 +1521,13 @@ impl Game {
                         };
                         let highlight = Color::new(c.r * pulse, c.g * pulse, c.b * pulse, 1.0);
                         draw_stylized_block(
-                            bx, by, cell_size, highlight, 3.0, h_color, scale_x, scale_y, shape,
+                            bx,
+                            by,
+                            cell_size,
+                            highlight,
+                            (3.0, h_color),
+                            (scale_x, scale_y),
+                            shape,
                         );
                         // Extra glow outline that flares at pulse peaks
                         if !self.is_frozen && pulse > MARKED_GLOW_THRESHOLD {
@@ -1546,10 +1550,8 @@ impl Game {
                             by,
                             cell_size,
                             c,
-                            1.0,
-                            Color::new(0.0, 0.0, 0.0, 0.5),
-                            scale_x,
-                            scale_y,
+                            (1.0, Color::new(0.0, 0.0, 0.0, 0.5)),
+                            (scale_x, scale_y),
                             shape,
                         );
                     }
@@ -1661,10 +1663,8 @@ impl Game {
                             by,
                             cell_size,
                             color,
-                            2.0,
-                            border_color,
-                            1.0,
-                            1.0,
+                            (2.0, border_color),
+                            (1.0, 1.0),
                             shape,
                         );
                         draw_shape_outline(
@@ -1732,7 +1732,7 @@ impl Game {
 
         let hud_top_text_y = pad + font_lg;
         draw_text(
-            &format!("SCORE: {}", self.score),
+            format!("SCORE: {}", self.score),
             margin,
             hud_top_text_y,
             font_lg,
@@ -1772,7 +1772,7 @@ impl Game {
 
         if self.combo > 0 {
             draw_text(
-                &format!("COMBO x{}", self.combo),
+                format!("COMBO x{}", self.combo),
                 margin,
                 hud_top_text_y + font_lg * COMBO_VERTICAL_OFFSET_FACTOR,
                 font_lg * COMBO_FONT_SCALE,
@@ -1927,10 +1927,8 @@ impl Game {
                     by,
                     layout.next_cell,
                     color,
-                    1.0,
-                    border,
-                    1.0,
-                    1.0,
+                    (1.0, border),
+                    (1.0, 1.0),
                     shape,
                 );
                 if self.next_chain[r][c] {
@@ -2101,7 +2099,7 @@ impl Game {
                     };
 
                     // Rank column (left aligned)
-                    draw_text(&format!("{}.", i + 1), rank_x, y, entry_sz, color);
+                    draw_text(format!("{}.", i + 1), rank_x, y, entry_sz, color);
 
                     // Name column (left aligned)
                     draw_text(&entry.name, name_x, y, entry_sz, color);
@@ -2246,7 +2244,7 @@ async fn main() {
             game.leaderboard_saved = true;
             game.high_scores = load_high_scores();
             // Sort after loading since load_list does not guarantee order.
-            game.high_scores.sort_by(|a, b| b.score.cmp(&a.score));
+            game.high_scores.sort_by_key(|a| std::cmp::Reverse(a.score));
             if game.score > 0 && game.qualifies_for_leaderboard() {
                 game.entering_name = true;
                 game.name_input = Some(shared::input::TextInput::new(
